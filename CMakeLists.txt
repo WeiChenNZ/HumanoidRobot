@@ -5,6 +5,11 @@ project(HumanoidRobot)
 set(CMAKE_CXX_STANDARD 20) 
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+set(URDF_FILE_PATH "${CMAKE_SOURCE_DIR}/Models/RobotModels/bruce/urdf/bruce.urdf")
+set(PARAMETER_FILE_PATH "${CMAKE_SOURCE_DIR}/settings/RobotParameters.json")
+add_definitions(-DURDF_FILE_PATH="${URDF_FILE_PATH}")
+add_definitions(-DPARAMETER_FILE_PATH="${PARAMETER_FILE_PATH}")
+
 set(CMAKE_BUILD_TYPE Debug)
 
 #set(CMAKE_BUILD_TYPE Release)
