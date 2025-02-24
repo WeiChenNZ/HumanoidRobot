@@ -1,4 +1,4 @@
-#include "gazeboBridge.h"
+#include "GazeboBridge.h"
 #include "BruceRobotSimulator.h"
 
 

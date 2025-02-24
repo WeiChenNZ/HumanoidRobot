@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gazeboBridge.h"
+#include "GazeboBridge.h"
 #include <atomic>
 #include <thread>
 

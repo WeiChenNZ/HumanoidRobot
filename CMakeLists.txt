@@ -27,22 +27,26 @@ foreach(HEADER_FILE ${HEADER_DIRS})
     list(APPEND INCLUDE_DIRS ${HEADER_PATH})
 endforeach()
 list(REMOVE_DUPLICATES INCLUDE_DIRS) 
- 
+
 # Add include directories recursively
 foreach(DIR ${INCLUDE_DIRS}) 
     include_directories(${CMAKE_SOURCE_DIR}/${DIR})
 endforeach()
  
-message(++++++++++++++++++++++)
+message(++++++++++++++++++++++) 
 message(${INCLUDE_DIRS})
 
 # Find and include Eigen3
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIRS})
 
+find_package(urdfdom REQUIRED)
+find_package(nlohmann_json REQUIRED)
+
 add_subdirectory(src/Shared_Memory)
 add_subdirectory(src/Simulation)
 add_subdirectory(src/RobotModel)
+add_subdirectory(src/Kinematics)
 
 # Create executable
 #add_executable(main ${SOURCES})

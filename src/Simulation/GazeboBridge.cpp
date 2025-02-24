@@ -1,4 +1,4 @@
-#include "gazeboBridge.h"
+#include "GazeboBridge.h"
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
