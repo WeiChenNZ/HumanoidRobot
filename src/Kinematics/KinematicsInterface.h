@@ -10,13 +10,12 @@ enum LEG{
     LEFT_LEG = -1
 };
 
-using KinematicsDataType = std::variant<double, int, Eigen::MatrixXd>;
 
 class KinematicsInterface{
 
     public:
-        virtual std::vector<KinematicsDataType> inverseKinematicsFoot(Eigen::MatrixXd, Eigen::MatrixXd, LEG) = 0; 
-        virtual std::vector<KinematicsDataType> inverseKinematicsAnkle(Eigen::MatrixXd, Eigen::MatrixXd, LEG) = 0; 
-        virtual std::vector<KinematicsDataType> forwardKinematicsLeg(std::vector<double>) = 0;
-        virtual std::vector<KinematicsDataType> forwardKinematicsRobot(std::vector<KinematicsDataType>) = 0;
+        virtual std::vector<double> inverseKinematicsFoot(Eigen::MatrixXd, Eigen::MatrixXd, LEG) = 0; 
+        virtual std::vector<double> inverseKinematicsAnkle(Eigen::MatrixXd, Eigen::MatrixXd, LEG) = 0; 
+        virtual std::unordered_map<std::string, Eigen::MatrixXd> forwardKinematicsLeg(std::vector<double>) = 0;
+        virtual std::unordered_map<std::string, Eigen::MatrixXd> forwardKinematicsRobot(std::unordered_map<std::string, Eigen::MatrixXd>) = 0;
 };
