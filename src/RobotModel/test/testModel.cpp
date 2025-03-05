@@ -10,7 +10,25 @@ int main()
 
     RobotModel rm(urdfFileName, parameterFileName);
 
-    cout<<"vector = "<<rm.getVectorFromJson("vec4")<<endl;
+    // auto relPos = rm.getRelativePosOfJointsLeg();
+
+    // int i = 0;
+    // for(auto a:relPos)
+    // {
+    //     cout<<"r_"<<i<<"_"<<i+1<<" = "<<a[0]<<" "<<a[1]<<" "<<a[2]<<endl;
+    //     i++;
+    // }
+
+    int i = 0;
+    auto inertials = rm.getSpatialInertials();
+    for (auto a:inertials)
+    {
+        // cout<<"body "<<i<<"'s Spatial Inertial is:"<<endl
+        //     <<a<<endl;
+        // i++;
+    }
+
+    
 
     
     // cout<<"joints number = "<<rm.model->joints_.size()<<endl;

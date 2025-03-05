@@ -13,9 +13,9 @@ class Kinematics: public KinematicsInterface{
 
         /**
          * @brief Inverse Kinematics of the foot
-         * @param foot position MatrixXd(3,1) 0-x, 1-y, 2-z
-         * @param foot direction MatrixXd(3,1) 0-roll, 1-picth, 2-yaw
-         * @param leg index: 1-right, -1-left
+         * @param foot-position MatrixXd(3,1) 0-x, 1-y, 2-z
+         * @param foot-direction MatrixXd(3,1) 0-roll, 1-picth, 2-yaw
+         * @param legIndex: 1-right, -1-left
          * 
          * @return vector of 5 elements
          * @return dq1,dq2,dq3,dq4,dq5
@@ -25,9 +25,9 @@ class Kinematics: public KinematicsInterface{
         
         /**
          * @brief Inverse Kinematics of the ankle
-         * @param foot position MatrixXd(3,1) 0-x, 1-y, 2-z
-         * @param foot direction MatrixXd(3,1) 0-roll, 1-picth, 2-yaw
-         * @param legindex: 1-right, -1-left
+         * @param foot-position MatrixXd(3,1) 0-x, 1-y, 2-z
+         * @param foot-direction MatrixXd(3,1) 0-roll, 1-picth, 2-yaw
+         * @param legIndex: 1-right, -1-left
          * 
          * @return vector of 5 elements
          * @return dq1,dq2,dq3,dq4,dq5
