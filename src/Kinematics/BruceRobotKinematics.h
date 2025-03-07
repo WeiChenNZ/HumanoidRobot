@@ -7,7 +7,7 @@
 
 class Kinematics: public KinematicsInterface{
 
-    public:
+    public: 
 
         Kinematics(std::shared_ptr<RobotModel>);
 

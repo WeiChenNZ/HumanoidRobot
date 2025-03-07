@@ -77,10 +77,10 @@ void RobotModel::setSpatialInertials(void)
 
         //calculate Spatial Intertial based on algorithm:
         // Ga = Ad(Tba).T * Gb * Ad(Tba)
-        spatialInertial.block(0,0,3,3) = R*I*R.transpose() - MathTools::skewMatrix(t)*R*m*I3*R.transpose()*MathTools::skewMatrix(t);
-        spatialInertial.block(0,3,3,3) = MathTools::skewMatrix(t)*R*m*I3*R.transpose();
-        spatialInertial.block(3,0,3,3) = -R*m*I3*R.transpose()*MathTools::skewMatrix(t);
-        spatialInertial.block(3,3,3,3) = R*m*I3*R.transpose();
+        spatialInertial.block(0,0,3,3) = R*I*R.transpose() - m*R*MathTools::skewMatrix(R.transpose()*t)*MathTools::skewMatrix(R.transpose()*t)*R.transpose();
+        spatialInertial.block(0,3,3,3) = m*R*MathTools::skewMatrix(R.transpose()*t);
+        spatialInertial.block(3,0,3,3) = -m*R*MathTools::skewMatrix(R.transpose()*t)*R.transpose();
+        spatialInertial.block(3,3,3,3) = m*R;
  
         spatialInertials.push_back(spatialInertial);
     }
@@ -116,10 +116,10 @@ void RobotModel::setSpatialInertials(void)
 
         //calculate Spatial Intertial based on algorithm:
         // Ga = Ad(Tba).T * Gb * Ad(Tba)
-        spatialInertial.block(0,0,3,3) = R*I*R.transpose() - MathTools::skewMatrix(t)*R*m*I3*R.transpose()*MathTools::skewMatrix(t);
-        spatialInertial.block(0,3,3,3) = MathTools::skewMatrix(t)*R*m*I3*R.transpose();
-        spatialInertial.block(3,0,3,3) = -R*m*I3*R.transpose()*MathTools::skewMatrix(t);
-        spatialInertial.block(3,3,3,3) = R*m*I3*R.transpose();
+        spatialInertial.block(0,0,3,3) = R*I*R.transpose() - m*R*MathTools::skewMatrix(R.transpose()*t)*MathTools::skewMatrix(R.transpose()*t)*R.transpose();
+        spatialInertial.block(0,3,3,3) = m*R*MathTools::skewMatrix(R.transpose()*t);
+        spatialInertial.block(3,0,3,3) = -m*R*MathTools::skewMatrix(R.transpose()*t)*R.transpose();
+        spatialInertial.block(3,3,3,3) = m*R;
  
         spatialInertials.push_back(spatialInertial);
     }
@@ -154,10 +154,10 @@ void RobotModel::setSpatialInertials(void)
 
         //calculate Spatial Intertial based on algorithm:
         // Ga = Ad(Tba).T * Gb * Ad(Tba)
-        spatialInertial.block(0,0,3,3) = R*I*R.transpose() - MathTools::skewMatrix(t)*R*m*I3*R.transpose()*MathTools::skewMatrix(t);
-        spatialInertial.block(0,3,3,3) = MathTools::skewMatrix(t)*R*m*I3*R.transpose();
-        spatialInertial.block(3,0,3,3) = -R*m*I3*R.transpose()*MathTools::skewMatrix(t);
-        spatialInertial.block(3,3,3,3) = R*m*I3*R.transpose();
+        spatialInertial.block(0,0,3,3) = R*I*R.transpose() - m*R*MathTools::skewMatrix(R.transpose()*t)*MathTools::skewMatrix(R.transpose()*t)*R.transpose();
+        spatialInertial.block(0,3,3,3) = m*R*MathTools::skewMatrix(R.transpose()*t);
+        spatialInertial.block(3,0,3,3) = -m*R*MathTools::skewMatrix(R.transpose()*t)*R.transpose();
+        spatialInertial.block(3,3,3,3) = m*R;
  
         spatialInertials.push_back(spatialInertial);
     }
