@@ -20,6 +20,8 @@ class RobotModel{
         int getNumJointsPerLeg(){return numJointsPerLeg;}
         std::vector<Eigen::Vector3d> getRelativePosOfJointsLeg(void);
         std::vector<Eigen::MatrixXd> getSpatialInertials(void);
+        
+        double getTotalMass(void){return totalMass;}
 
 
 
@@ -38,6 +40,7 @@ class RobotModel{
         std::vector<std::string> leftArmLinks;
         std::vector<std::string> leftArmJoints;
 
+        double totalMass;
         std::vector<Eigen::MatrixXd> spatialInertials;
         std::vector<Eigen::Vector3d> relativePosOfJoints;
 

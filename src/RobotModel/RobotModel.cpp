@@ -46,6 +46,8 @@ void RobotModel::setSpatialInertials(void)
     MatrixXd spatialInertial(6,6);
     MatrixXd I3 = MatrixXd::Identity(3,3);
 
+    totalMass = 0.;
+
     //base link
     {
         string linkName = baseLinkName;
@@ -83,6 +85,8 @@ void RobotModel::setSpatialInertials(void)
         spatialInertial.block(3,3,3,3) = m*R;
  
         spatialInertials.push_back(spatialInertial);
+
+        totalMass += model->links_[linkName]->inertial->mass;
     }
 
     //right leg
@@ -122,6 +126,8 @@ void RobotModel::setSpatialInertials(void)
         spatialInertial.block(3,3,3,3) = m*R;
  
         spatialInertials.push_back(spatialInertial);
+
+        totalMass += model->links_[linkName]->inertial->mass;
     }
     //left Leg    
     for(auto linkName: leftLegLinks)
@@ -160,6 +166,8 @@ void RobotModel::setSpatialInertials(void)
         spatialInertial.block(3,3,3,3) = m*R;
  
         spatialInertials.push_back(spatialInertial);
+
+        totalMass += model->links_[linkName]->inertial->mass;
     }
 }
 

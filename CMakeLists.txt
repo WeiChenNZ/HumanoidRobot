@@ -11,14 +11,14 @@ add_definitions(-DURDF_FILE_PATH="${URDF_FILE_PATH}")
 add_definitions(-DPARAMETER_FILE_PATH="${PARAMETER_FILE_PATH}")
 
 set(CMAKE_BUILD_TYPE Debug)
-
-# set(CMAKE_BUILD_TYPE Release)
  
+# set(CMAKE_BUILD_TYPE Release) 
+
 #disable align so that I can use MatrixXd multiplication
 # add_definitions(-DEIGEN_DONT_VECTORIZE)
 add_definitions(-DEIGEN_DONT_ALIGN)
  
-
+  
 # Find all .cpp source files 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
@@ -56,6 +56,7 @@ add_subdirectory(src/Dynamics)
 add_subdirectory(src/MPC)
 add_subdirectory(src/WBC)
 add_subdirectory(src/StateEstimation)
+add_subdirectory(src/MemoryManager)
 
 # Create executable
 #add_executable(main ${SOURCES})
