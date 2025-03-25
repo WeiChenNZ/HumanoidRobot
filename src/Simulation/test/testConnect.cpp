@@ -1,12 +1,18 @@
 #include "GazeboBridge.h"
 #include "BruceRobotSimulator.h"
+#include "RobotModel.h"
+#include "BruceDynamics.h"
+#include "BruceRobotKinematics.h"
 
+using namespace std;
 
 int main()
 {
-    // GazeboBridge gb("bruce", 5);
-    BruceRobotSimulator brs;
-    brs.initializeSimulator();
+    shared_ptr<RobotModel> robotModel = make_shared<RobotModel>(URDF_FILE_PATH, PARAMETER_FILE_PATH);
+    shared_ptr<DynamicsInterface> DI = make_shared<BruceInverseDynamics>(robotModel);
+    shared_ptr<KinematicsInterface> KI = make_shared<Kinematics>(robotModel);
+    BruceRobotSimulator brs(KI, DI);
+    //brs.initializeSimulator();
     brs.run();
 
     // sleep(3);

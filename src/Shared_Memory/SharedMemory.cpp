@@ -130,7 +130,19 @@ void SharedMemory::setVal(std::unordered_map<std::string, Eigen::MatrixXd> value
         {
             if(value.find(get<string>(element["name"])) != value.end())
             {
-                element["data"] = value[get<string>(element["name"])];
+                //in order to deal with all row and column vector
+                //we need to transfer column vector to row vector
+                //in the other cases, do not transpose
+                if(value[get<string>(element["name"])].rows() > 1 && value[get<string>(element["name"])].cols() == 1)
+                {
+                    //col vector Nx1
+                    element["data"] = value[get<string>(element["name"])].transpose();
+                }
+                else
+                {
+                    //1xN or MxN or 1x1
+                    element["data"] = value[get<string>(element["name"])];
+                }
             }
         }
         updateSegment();

@@ -3,6 +3,8 @@
 #include "GazeboBridge.h"
 #include <atomic>
 #include <thread>
+#include "KinematicsInterface.h"
+#include "DynamicsInterface.h"
 
 enum SimModes
 {
@@ -13,7 +15,7 @@ enum SimModes
 class BruceRobotSimulator{
 
     public:
-        BruceRobotSimulator(void);
+        BruceRobotSimulator(std::shared_ptr<KinematicsInterface> kinematics_, std::shared_ptr<DynamicsInterface> dynamics_);
         void initializeSimulator(void);
 
         void run(void);
@@ -22,6 +24,14 @@ class BruceRobotSimulator{
 
         void writePosition(Eigen::MatrixXd, Eigen::MatrixXd);
         void writeTorque(Eigen::MatrixXd, Eigen::MatrixXd);
+
+        Eigen::MatrixXd getArmGoalTorques(Eigen::MatrixXd, Eigen::MatrixXd);
+        void updateSensorInfo(void);
+
+        //when robot is running in the simulaton mode
+        //we do not use the sensor estimation methods
+        //instead, we calculate estimation data based on kinematics and dynamics
+        void updateEstimation(void); //calculate_robot_model
 
         ~BruceRobotSimulator()
         {
@@ -49,6 +59,14 @@ class BruceRobotSimulator{
         Eigen::MatrixXd P;
         Eigen::MatrixXd I;
         Eigen::MatrixXd D;
+        Eigen::MatrixXd qArm;
+        Eigen::MatrixXd dqArm;
+        Eigen::MatrixXd qLeg;
+        Eigen::MatrixXd dqLeg;
+        Eigen::MatrixXd rotMat;
+        Eigen::MatrixXd accel; //3x1
+        Eigen::MatrixXd omega; //3x1
+        Eigen::MatrixXd footContacts;
 
         std::shared_ptr<GazeboBridge> gazeboBridge = nullptr;
         int simulationFrequency;
@@ -57,5 +75,7 @@ class BruceRobotSimulator{
         std::thread t;
         std::atomic<bool> threadRunningFlag;
 
+        std::shared_ptr<KinematicsInterface> kinematics;
+        std::shared_ptr<DynamicsInterface> dynamics;
 
 };

@@ -387,7 +387,7 @@ unordered_map<string, MatrixXd> Kinematics::forwardKinematicsLeg(vector<double> 
           -s1c2 * s345 + c1 * c345, -s1s2, -s1c2 * c345 - c1 * s345 ,
                          s2 * s345,   -c2,                s2 * c345 ;
     //rotation Jacobian
-    MatrixXd Jwr(3,3);
+    MatrixXd Jwr(3,5);
     Jwr << 0., -s1, c1s2, c1s2, c1s2 ,
            0.,  c1, s1s2, s1s2, s1s2 ,
            1.,  0.,   c2,   c2,   c2 ;
@@ -774,7 +774,7 @@ unordered_map<string, MatrixXd> Kinematics::forwardKinematicsRobot(unordered_map
     MatrixXd dql(5,1);
     dql << input["ld1"], input["ld2"], input["ld3"], input["ld4"], input["ld5"];
 
-    MatrixXd dqAll;//16*1
+    MatrixXd dqAll = MatrixXd::Zero(16,1);//16*1
     dqAll << w, bv, dqr, dql;
 
     //foot velocity in world frame

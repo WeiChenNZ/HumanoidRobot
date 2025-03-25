@@ -4,6 +4,7 @@
 
 class DynamicsInterface{
         
+        public:
         virtual void updateInversDynamics(Eigen::MatrixXd R, Eigen::MatrixXd p, Eigen::MatrixXd w, Eigen::MatrixXd bv, std::vector<double> q, std::vector<double> dq) = 0;
 
         virtual Eigen::MatrixXd getH(void) = 0;

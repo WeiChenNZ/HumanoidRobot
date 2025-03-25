@@ -32,8 +32,8 @@ class GazeboBridge{
         Eigen::MatrixXd getBodyEulerAngles(void){return BODY_POSE->getVal()["euler_angles"];}
         Eigen::MatrixXd getBodyVelocity(void){return BODY_POSE->getVal()["velocity"];}
         Eigen::MatrixXd getImuAcceleration(void){return IMU_STATE->getVal()["accel"];}
-        Eigen::MatrixXd getImuAngularRate(void){return BODY_POSE->getVal()["ang_rate"];}
-        Eigen::MatrixXd getFootContacts(void){return BODY_POSE->getVal()["on"];}
+        Eigen::MatrixXd getImuAngularRate(void){return IMU_STATE->getVal()["ang_rate"];}
+        Eigen::MatrixXd getFootContacts(void){return LIMB_CONTACT->getVal()["on"];}
         Eigen::MatrixXd getJointPosition(void){return JOINT_POSITION_COMMAND->getVal()["data"];}
         
         //write method

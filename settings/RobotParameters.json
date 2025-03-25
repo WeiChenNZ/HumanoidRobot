@@ -1,0 +1,23 @@
+{
+    "_COMMET":"in this json file, the names of arm and leg links and joints should be the same as those in the urdf file, so that I can determin which joints or links belong to a specific arm or leg in the urdf file",
+    
+    "Base_Link":"base_link",
+    
+    "Right_Arm_Links": ["shoulder_pitch_link_r", "shoulder_roll_link_r", "elbow_pitch_link_r"],
+    
+    "Right_Arm_Joints": ["shoulder_pitch_r", "shoulder_roll_r", "elbow_pitch_r"],
+    
+    "Left_Arm_Links": ["shoulder_pitch_link_l", "shoulder_roll_link_l", "elbow_pitch_link_l"],
+    
+    "Left_Arm_Joints": ["shoulder_pitch_l", "shoulder_roll_l", "elbow_pitch_l"],
+    
+    "Right_Leg_Links": ["hip_yaw_link_r", "hip_roll_link_r", "hip_pitch_link_r", "knee_pitch_link_r", "ankle_pitch_link_r"],
+    
+    "Right_Leg_Joints": ["hip_yaw_r", "hip_roll_r", "hip_pitch_r", "knee_pitch_r", "ankle_pitch_r"],
+    
+    "Left_Leg_Links": ["hip_yaw_link_l", "hip_roll_link_l", "hip_pitch_link_l", "knee_pitch_link_l", "ankle_pitch_link_l"],
+    
+    "Left_Leg_Joints": ["hip_yaw_l", "hip_roll_l", "hip_pitch_l", "knee_pitch_l", "ankle_pitch_l"],
+    
+    "SIMULATION": true
+}

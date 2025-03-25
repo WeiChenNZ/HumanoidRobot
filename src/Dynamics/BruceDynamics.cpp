@@ -148,17 +148,17 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
 
     //Ad(Tn_n-1)
     //X1T = Ad(T1_0)
-    Matrix3d X0T = X0.transpose();
-    Matrix3d X1T = X1.transpose();
-    Matrix3d X2T = X2.transpose();
-    Matrix3d X3T = X3.transpose();
-    Matrix3d X4T = X4.transpose();
-    Matrix3d X5T = X5.transpose();
-    Matrix3d X6T = X6.transpose();
-    Matrix3d X7T = X7.transpose();
-    Matrix3d X8T = X8.transpose();
-    Matrix3d X9T = X9.transpose();
-    Matrix3d X10T = X10.transpose();
+    MatrixXd X0T = X0.transpose();
+    MatrixXd X1T = X1.transpose();
+    MatrixXd X2T = X2.transpose();
+    MatrixXd X3T = X3.transpose();
+    MatrixXd X4T = X4.transpose();
+    MatrixXd X5T = X5.transpose();
+    MatrixXd X6T = X6.transpose();
+    MatrixXd X7T = X7.transpose();
+    MatrixXd X8T = X8.transpose();
+    MatrixXd X9T = X9.transpose();
+    MatrixXd X10T = X10.transpose();
 
     //calculate C
     //set a0 = 0 <== G = 0, and q" = 0, so the dynamics : Cq' = tau
@@ -413,8 +413,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(11,15) = F(2);
     //k = 6
     F = X6 * F;
-    H.block(15,0,1,6) = F;
-    H.block(0,15,6,1) = F.transpose();
+    H.block(15,0,1,6) = F.transpose();
+    H.block(0,15,6,1) = F;
 
     //i = 9
     Ic_8 += X9 * Ic_9 * X9T;
@@ -434,8 +434,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(11,14) = F(2);
     //k = 6
     F = X6 * F;
-    H.block(14,0,1,6) = F;
-    H.block(0,14,6,1) = F.transpose();
+    H.block(14,0,1,6) = F.transpose();
+    H.block(0,14,6,1) = F;
 
     //i = 8
     Ic_7 += X8 * Ic_8 * X8T;
@@ -451,8 +451,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(11,13) = F(2);
     //k = 6
     F = X6 * F;
-    H.block(13,0,1,6) = F;
-    H.block(0,13,6,1) = F.transpose();
+    H.block(13,0,1,6) = F.transpose();
+    H.block(0,13,6,1) = F;
 
     //i = 7
     Ic_6 += X7 * Ic_7 * X7T;
@@ -464,8 +464,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(11,12) = F(2);
     //k = 6
     F = X6 * F;
-    H.block(12,0,1,6) = F;
-    H.block(0,12,6,1) = F.transpose();
+    H.block(12,0,1,6) = F.transpose();
+    H.block(0,12,6,1) = F;
 
     //i = 6
     Ic_0 += X6 * Ic_6 * X6T;
@@ -473,8 +473,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(11,11) = Ic_6(2,2);
     //k = 6
     F = X6 * F;
-    H.block(11,0,1,6) = F;
-    H.block(0,11,6,1) = F.transpose();
+    H.block(11,0,1,6) = F.transpose();
+    H.block(0,11,6,1) = F;
 
     //i = 5
     Ic_4 += X5 * Ic_5 * X5T;
@@ -498,8 +498,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(6,10) = F(2);
     //k = 1
     F = X1 * F;
-    H.block(10,0,1,6) = F;
-    H.block(0,10,6,1) = F.transpose();
+    H.block(10,0,1,6) = F.transpose();
+    H.block(0,10,6,1) = F;
 
     //i = 4
     Ic_3 += X4 * Ic_4 * X4T;
@@ -519,8 +519,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(6,9) = F(2);
     //k = 1
     F = X1 * F;
-    H.block(9,0,1,6) = F;
-    H.block(0,9,6,1) = F.transpose();
+    H.block(9,0,1,6) = F.transpose();
+    H.block(0,9,6,1) = F;
 
     //i = 3
     Ic_2 += X3 * Ic_3 * X3T;
@@ -536,8 +536,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(6,8) = F(2);
     //k = 1
     F = X1 * F;
-    H.block(8,0,1,6) = F;
-    H.block(0,8,6,1) = F.transpose();
+    H.block(8,0,1,6) = F.transpose();
+    H.block(0,8,6,1) = F;
 
     //i = 2
     Ic_1 += X2 * Ic_2 * X2T;
@@ -549,8 +549,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(6,7) = F(2);
     //k = 1
     F = X1 * F;
-    H.block(7,0,1,6) = F;
-    H.block(0,7,6,1) = F.transpose();
+    H.block(7,0,1,6) = F.transpose();
+    H.block(0,7,6,1) = F;
 
     //i = 1
     Ic_0 += X1 * Ic_1 * X1T;
@@ -558,8 +558,8 @@ void BruceInverseDynamics::updateInversDynamics(Eigen::MatrixXd R, Eigen::Matrix
     H(6,6) = Ic_1(2,2);
     //k = 1
     F = X1 * F;
-    H.block(6,0,1,6) = F;
-    H.block(0,6,6,1) = F.transpose();
+    H.block(6,0,1,6) = F.transpose();
+    H.block(0,6,6,1) = F;
 
     //i = 0
     H.block(0,0,6,6) = Ic_0;

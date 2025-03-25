@@ -19,8 +19,8 @@ class BruceInverseDynamics: public DynamicsInterface{
         Eigen::MatrixXd getdAGdq(void) {return dAGdq;}
         Eigen::MatrixXd getPcom(void) {return pcom;}
         Eigen::MatrixXd getVcom(void) {return vcom;}
-        Eigen::MatrixXd getIG(void) {return hG.block(0,0,3,1);}
-        Eigen::MatrixXd getKG(void) {return hG.block(3,0,3,1);}
+        Eigen::MatrixXd getKG(void) {return hG.block(0,0,3,1);} //hG[0:2]
+        Eigen::MatrixXd getIG(void) {return hG.block(3,0,3,1);} //hG[3:5]
 
 
     private:
