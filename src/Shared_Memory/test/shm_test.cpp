@@ -11,13 +11,15 @@ void writeFunc(shared_ptr<SharedMemory> s)
     while(1)
     {
         i++;
-        MatrixXd d33(3,3);
-        d33<<1+i,2+i,3+i,4+i,5+i,6+i,7+i,8+i,9+i;
-        MatrixXd d22(2,2);
-        d22<<1+i,2+i,3+i,4+i;
+        MatrixXd d31(3,1);
+        // d33<<1+i,2+i,3+i,4+i,5+i,6+i,7+i,8+i,9+i;
+        d31<<1+i,2+i,3+i;
+        MatrixXd d12(1,2);
+        // d22<<1+i,2+i,3+i,4+i;
+        d12<<1+i,2+i;
         unordered_map<string, MatrixXd> val;
-        val["block1"] = d33;
-        val["block2"] = d22;
+        val["block1"] = d31;
+        val["block2"] = d12;
         s->setVal(val,SEG_ALL);
         sleep(1);
     }
@@ -42,9 +44,9 @@ int main()
 
 
     shared_ptr<SharedMemory> shm = make_shared<SharedMemory>("Wayne", "_Seg1",1);
-    MatrixXd data(3,3), data2(2,2);
-    shm->addBlock("block1", MatrixXd::Zero(3,3));
-    shm->addBlock("block2", MatrixXd::Zero(2,2));
+    // MatrixXd data(3,3), data2(2,2);
+    shm->addBlock("block1", MatrixXd::Zero(3,1));
+    shm->addBlock("block2", MatrixXd::Zero(1,2));
     shm->connectSegment();
 
     thread t2(readFunc, shm);

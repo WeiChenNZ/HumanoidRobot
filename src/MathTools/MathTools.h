@@ -44,4 +44,15 @@ class MathTools{
 
             return result;
         }
+
+        static Eigen::MatrixXd Rz(double yaw)
+        {
+            double c = cos(yaw);
+            double s = sin(yaw);
+            Eigen::MatrixXd R = Eigen::MatrixXd::Zero(3,3);
+            R << c, -s, 0.,
+                 s,  c, 0.,
+                 0.,0., 1.;
+            return R;
+        }
 };
