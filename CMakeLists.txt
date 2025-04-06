@@ -57,6 +57,7 @@ add_subdirectory(src/MPC)
 add_subdirectory(src/WBC)
 add_subdirectory(src/StateEstimation)
 add_subdirectory(src/MemoryManager)
+add_subdirectory(src/BruceRobotStatus)
 
 # Create executable
 #add_executable(main ${SOURCES})

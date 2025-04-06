@@ -45,6 +45,28 @@ class MathTools{
             return result;
         }
 
+        static Eigen::MatrixXd Rx(double roll)
+        {
+            double c = cos(roll);
+            double s = sin(roll);
+            Eigen::MatrixXd R = Eigen::MatrixXd::Zero(3,3);
+            R << 1., 0., 0.,
+                 0., c,  -s,
+                 0., s,  c;
+            return R;
+        }
+
+        static Eigen::MatrixXd Ry(double pitch)
+        {
+            double c = cos(pitch);
+            double s = sin(pitch);
+            Eigen::MatrixXd R = Eigen::MatrixXd::Zero(3,3);
+            R << c, 0., s,
+                 0.,1., 0.,
+                 -s,0., c;
+            return R;
+        }
+
         static Eigen::MatrixXd Rz(double yaw)
         {
             double c = cos(yaw);

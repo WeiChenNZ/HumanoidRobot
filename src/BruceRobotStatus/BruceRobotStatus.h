@@ -77,10 +77,48 @@ class BruceRobotStatus{
 
         //joints
         //{"key": {"key": value}}
-        std::unordered_map<std::string, std::unordered_map<std::string, Eigen::MatrixXd>> joints;
+        std::unordered_map<std::string, std::unordered_map<std::string, double>> joints;
         
         //gamepad data
         std::unordered_map<std::string, Eigen::MatrixXd> gamepad;
+
+        //sensor
+        Eigen::MatrixXd imuAccel;
+        Eigen::MatrixXd imuOmega;
+
+        //plan
+        int mode;
+        int phase;
+        Eigen::MatrixXd bodyPositionInWorldDest;
+        Eigen::MatrixXd bodyVelocityInWorldDest;
+        Eigen::MatrixXd bodyRotInWorldDest;
+        Eigen::MatrixXd bodyOmegaInBodyDest;
+        Eigen::MatrixXd comPositionInWorldDest;
+        Eigen::MatrixXd comVelocityInWorldDest;
+        int footPhaseRight;
+        Eigen::MatrixXd positionRightFootInWorldDest;
+        Eigen::MatrixXd velocityRightFootInWorldDest;
+        Eigen::MatrixXd RotRightFootInWorldDest;
+        Eigen::MatrixXd omegaRightFootDest;
+        int footPhaseLeft;
+        Eigen::MatrixXd positionLeftFootInWorldDest;
+        Eigen::MatrixXd velocityLeftFootInWorldDest;
+        Eigen::MatrixXd RotLeftFootInWorldDest;
+        Eigen::MatrixXd omegaLeftFootDest;
+
+        //input
+        int modeCmd;
+        Eigen::MatrixXd xyVelocityCmd;
+        double yawRateCmd;
+        Eigen::MatrixXd comPositionChangedCmd;
+        Eigen::MatrixXd eulerAngleChangeCmd;
+        Eigen::MatrixXd RotChange;
+        double yawAngleChangeRightCmd;
+        double yawAngleChangeLeftCmd;
+        double footClearnceCmd;
+        double coolingSpeedCmd;
+        Eigen::MatrixXd dcmOffsetCompensationCmd;
+        double comOffsetCompensationCmd;
 
 
         //public methods
