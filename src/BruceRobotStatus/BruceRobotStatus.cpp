@@ -1,6 +1,8 @@
 #include "BruceRobotStatus.h"
 #include "MemoryManager.h"
 #include "MathTools.h"
+#include <chrono>
+#include <thread>
 
 using namespace Eigen;
 using namespace std;
@@ -159,7 +161,7 @@ void BruceRobotStatus::updateInputStatus()
     comOffsetCompensationCmd = inputData["com_offset_compensation"](0,0);
 }
 
-void BruceRobotStatus::updateLegStatus()
+void BruceRobotStatus::updateLegStatus(bool torque)
 {
     unordered_map<string, MatrixXd> legData = MemoryManager::getInstance().LEG_STATE->getVal();
     MatrixXd q = legData["joint_positions"];
@@ -167,5 +169,312 @@ void BruceRobotStatus::updateLegStatus()
 
     //right leg
     joints["HIP_YAW_R"]["q"] = q(0,0);
+    joints["HIP_ROLL_R"]["q"] = q(1,0);
+    joints["HIP_PITCH_R"]["q"] = q(2,0);
+    joints["KNEE_PITCH_R"]["q"] = q(3,0);
+    joints["ANKLE_PITCH_R"]["q"] = q(4,0);
 
+    joints["HIP_YAW_R"]["dq"] = dq(0,0);
+    joints["HIP_ROLL_R"]["dq"] = dq(1,0);
+    joints["HIP_PITCH_R"]["dq"] = dq(2,0);
+    joints["KNEE_PITCH_R"]["dq"] = dq(3,0);
+    joints["ANKLE_PITCH_R"]["dq"] = dq(4,0);
+
+    //left leg
+    joints["HIP_YAW_L"]["q"] = q(5,0);
+    joints["HIP_ROLL_L"]["q"] = q(6,0);
+    joints["HIP_PITCH_L"]["q"] = q(7,0);
+    joints["KNEE_PITCH_L"]["q"] = q(8,0);
+    joints["ANKLE_PITCH_L"]["q"] = q(9,0);
+
+    joints["HIP_YAW_L"]["dq"] = dq(5,0);
+    joints["HIP_ROLL_L"]["dq"] = dq(6,0);
+    joints["HIP_PITCH_L"]["dq"] = dq(7,0);
+    joints["KNEE_PITCH_L"]["dq"] = dq(8,0);
+    joints["ANKLE_PITCH_L"]["dq"] = dq(9,0);
+
+    if(torque)
+    {
+        MatrixXd torques = legData["joint_torques"];
+        joints["HIP_YAW_R"]["torque"] = torques(0,0);
+        joints["HIP_ROLL_R"]["torque"] = torques(1,0);
+        joints["HIP_PITCH_R"]["torque"] = torques(2,0);
+        joints["KNEE_PITCH_R"]["torque"] = torques(3,0);
+        joints["ANKLE_PITCH_R"]["torque"] = torques(4,0);
+        joints["HIP_YAW_L"]["torque"] = torques(5,0);
+        joints["HIP_ROLL_L"]["torque"] = torques(6,0);
+        joints["HIP_PITCH_L"]["torque"] = torques(7,0);
+        joints["KNEE_PITCH_L"]["torque"] = torques(8,0);
+        joints["ANKLE_PITCH_L"]["torque"] = torques(9,0);
+    }
+}
+
+void BruceRobotStatus::setCommandLegPositions()
+{
+    MatrixXd BearEnable(1,1);
+    BearEnable << 1.;
+
+    MatrixXd BearMode(1,1);
+    BearMode << BearModes::position;
+
+    MatrixXd goalPositions(10,1);
+    goalPositions << joints["HIP_YAW_R"]["q_goal"],
+                   joints["HIP_ROLL_R"]["q_goal"],
+                   joints["HIP_PITCH_R"]["q_goal"],
+                   joints["KNEE_PITCH_R"]["q_goal"],
+                   joints["ANKLE_PITCH_R"]["q_goal"],
+                   joints["HIP_YAW_L"]["q_goal"],
+                   joints["HIP_ROLL_L"]["q_goal"],
+                   joints["HIP_PITCH_L"]["q_goal"],
+                   joints["KNEE_PITCH_L"]["q_goal"],
+                   joints["ANKLE_PITCH_L"]["q_goal"];
+    
+    unordered_map<string, MatrixXd> commands;
+    commands["BEAR_enable"] = BearEnable;
+    commands["BEAR_mode"] = BearMode;
+    commands["goal_torques"] = goalPositions;
+
+    MemoryManager::getInstance().LEG_COMMAND->setVal(commands);
+}
+
+
+void BruceRobotStatus::setCommandLegTorques()
+{
+    MatrixXd BearEnable(1,1);
+    BearEnable << 1.;
+
+    MatrixXd BearMode(1,1);
+    BearMode << BearModes::torque;
+
+    MatrixXd goalTorques(10,1);
+    goalTorques << joints["HIP_YAW_R"]["tau_goal"],
+                   joints["HIP_ROLL_R"]["tau_goal"],
+                   joints["HIP_PITCH_R"]["tau_goal"],
+                   joints["KNEE_PITCH_R"]["tau_goal"],
+                   joints["ANKLE_PITCH_R"]["tau_goal"],
+                   joints["HIP_YAW_L"]["tau_goal"],
+                   joints["HIP_ROLL_L"]["tau_goal"],
+                   joints["HIP_PITCH_L"]["tau_goal"],
+                   joints["KNEE_PITCH_L"]["tau_goal"],
+                   joints["ANKLE_PITCH_L"]["tau_goal"];
+    
+    unordered_map<string, MatrixXd> commands;
+    commands["BEAR_enable"] = BearEnable;
+    commands["BEAR_mode"] = BearMode;
+    commands["goal_torques"] = goalTorques;
+
+    MemoryManager::getInstance().LEG_COMMAND->setVal(commands);
+}
+
+void BruceRobotStatus::setCommandLegValues()
+{
+    MatrixXd BearEnable(1,1);
+    BearEnable << 1.;
+
+    MatrixXd BearMode(1,1);
+    BearMode << BearModes::force;
+
+    MatrixXd goalTorques(10,1);
+    goalTorques << joints["HIP_YAW_R"]["tau_goal"],
+                   joints["HIP_ROLL_R"]["tau_goal"],
+                   joints["HIP_PITCH_R"]["tau_goal"],
+                   joints["KNEE_PITCH_R"]["tau_goal"],
+                   joints["ANKLE_PITCH_R"]["tau_goal"],
+                   joints["HIP_YAW_L"]["tau_goal"],
+                   joints["HIP_ROLL_L"]["tau_goal"],
+                   joints["HIP_PITCH_L"]["tau_goal"],
+                   joints["KNEE_PITCH_L"]["tau_goal"],
+                   joints["ANKLE_PITCH_L"]["tau_goal"];
+
+    MatrixXd goalPositions(10,1);
+    goalPositions << joints["HIP_YAW_R"]["q_goal"],
+                     joints["HIP_ROLL_R"]["q_goal"],
+                     joints["HIP_PITCH_R"]["q_goal"],
+                     joints["KNEE_PITCH_R"]["q_goal"],
+                     joints["ANKLE_PITCH_R"]["q_goal"],
+                     joints["HIP_YAW_L"]["q_goal"],
+                     joints["HIP_ROLL_L"]["q_goal"],
+                     joints["HIP_PITCH_L"]["q_goal"],
+                     joints["KNEE_PITCH_L"]["q_goal"],
+                     joints["ANKLE_PITCH_L"]["q_goal"];
+
+    MatrixXd goalVelocities(10,1);
+    goalVelocities << joints["HIP_YAW_R"]["dq_goal"],
+                      joints["HIP_ROLL_R"]["dq_goal"],
+                      joints["HIP_PITCH_R"]["dq_goal"],
+                      joints["KNEE_PITCH_R"]["dq_goal"],
+                      joints["ANKLE_PITCH_R"]["dq_goal"],
+                      joints["HIP_YAW_L"]["dq_goal"],
+                      joints["HIP_ROLL_L"]["dq_goal"],
+                      joints["HIP_PITCH_L"]["dq_goal"],
+                      joints["KNEE_PITCH_L"]["dq_goal"],
+                      joints["ANKLE_PITCH_L"]["dq_goal"];
+    
+    unordered_map<string, MatrixXd> commands;
+    commands["BEAR_enable"] = BearEnable;
+    commands["BEAR_mode"] = BearMode;
+    commands["goal_torques"] = goalTorques;
+    commands["goal_positions"] = goalPositions;
+    commands["goal_velocities"] = goalVelocities;
+    MemoryManager::getInstance().LEG_COMMAND->setVal(commands);
+}
+
+void BruceRobotStatus::updateArmStatus()
+{
+    unordered_map<string, MatrixXd> armData = MemoryManager::getInstance().ARM_STATE->getVal();
+    MatrixXd q = armData["joint_positions"];
+    MatrixXd dq = armData["joint_velocities"];
+
+    //right arm
+    joints["SHOULDER_PITCH_R"]["q"] = q(0,0);
+    joints["SHOULDER_ROLL_R"]["q"] = q(1,0);
+    joints["ELBOW_YAW_R"]["q"] = q(2,0);
+
+    joints["SHOULDER_PITCH_R"]["dq"] = dq(0,0);
+    joints["SHOULDER_ROLL_R"]["dq"] = dq(1,0);
+    joints["ELBOW_YAW_R"]["dq"] = dq(2,0);
+
+    //left arm
+    joints["SHOULDER_PITCH_L"]["q"] = q(3,0);
+    joints["SHOULDER_ROLL_L"]["q"] = q(4,0);
+    joints["ELBOW_YAW_L"]["q"] = q(5,0);
+
+    joints["SHOULDER_PITCH_L"]["dq"] = dq(3,0);
+    joints["SHOULDER_ROLL_L"]["dq"] = dq(4,0);
+    joints["ELBOW_YAW_L"]["dq"] = dq(5,0);
+}
+
+void BruceRobotStatus::setCommandArmPositions()
+{
+    MatrixXd DXLEnable(1,1);
+    DXLEnable << 1.;
+
+    MatrixXd DXLMode(1,1);
+    DXLMode << DXLModes::dxl_position;
+
+    MatrixXd goalPositions(6,1);
+    goalPositions << joints["SHOULDER_PITCH_R"]["q_goal"],
+                     joints["SHOULDER_ROLL_R"]["q_goal"],
+                     joints["ELBOW_YAW_R"]["q_goal"],
+                     joints["SHOULDER_PITCH_L"]["q_goal"],
+                     joints["SHOULDER_ROLL_L"]["q_goal"],
+                     joints["ELBOW_YAW_L"]["q_goal"];
+    
+    unordered_map<string, MatrixXd> commands;
+    commands["DXL_enable"] = DXLEnable;
+    commands["DXL_mode"] = DXLMode;
+    commands["goal_positions"] = goalPositions;
+    
+    MemoryManager::getInstance().ARM_COMMAND->setVal(commands);
+}
+
+void BruceRobotStatus::updateGamepadStatus()
+{
+    unordered_map<string, MatrixXd> gamepadData = MemoryManager::getInstance().GAMEPAD_STATE->getVal();
+
+    gamepad["U"] = gamepadData["U"](0,0);
+    gamepad["D"] = gamepadData["D"](0,0);
+    gamepad["L"] = gamepadData["L"](0,0);
+    gamepad["R"] = gamepadData["R"](0,0);
+    gamepad["A"] = gamepadData["A"](0,0);
+    gamepad["B"] = gamepadData["B"](0,0);
+    gamepad["X"] = gamepadData["X"](0,0);
+    gamepad["Y"] = gamepadData["Y"](0,0);
+    gamepad["LZ"] = gamepadData["LZ"](0,0);
+    gamepad["LS"] = gamepadData["LS"](0,0);
+    gamepad["LS2"] = gamepadData["LS2"](0,0);
+    gamepad["LSP"] = gamepadData["LSP"](0,0);
+    gamepad["LSM"] = gamepadData["LSM"](0,0);
+    gamepad["RZ"] = gamepadData["RZ"](0,0);
+    gamepad["RS"] = gamepadData["RS"](0,0);
+    gamepad["RS2"] = gamepadData["RS2"](0,0);
+    gamepad["RSP"] = gamepadData["RSP"](0,0);
+    gamepad["RSM"] = gamepadData["RSM"](0,0);
+    gamepad["ST"] = gamepadData["ST"](0,0);
+    gamepad["BK"] = gamepadData["BK"](0,0);
+    gamepad["ALT"] = gamepadData["ALT"](0,0);
+    gamepad["FN"] = gamepadData["FN"](0,0);
+    gamepad["LX"] = gamepadData["LX"](0,0);
+    gamepad["LY"] = gamepadData["LY"](0,0);
+    gamepad["RX"] = gamepadData["RX"](0,0);
+    gamepad["RY"] = gamepadData["RY"](0,0);
+}
+
+void BruceRobotStatus::stopRobot()
+{
+    MatrixXd BearCommand(1,1);
+    BearCommand << 0.;
+
+    unordered_map<string, MatrixXd> BearCommands;
+    BearCommands["BEAR_enable"] = BearCommand;
+    MemoryManager::getInstance().LEG_COMMAND->setVal(BearCommands);
+
+    MatrixXd DXLCommand(1,1);
+    DXLCommand << 0.;
+
+    unordered_map<string, MatrixXd> DXLCommands;
+    DXLCommands["DXL_enable"] = DXLCommand;
+    MemoryManager::getInstance().ARM_COMMAND->setVal(DXLCommands);
+}
+
+void BruceRobotStatus::dampingRobot()
+{
+    MatrixXd BearCommand(1,1);
+    BearCommand << 1.;
+    MatrixXd damping(1,1);
+    damping << 1.;
+
+    unordered_map<string, MatrixXd> BearCommands;
+    BearCommands["BEAR_enable"] = BearCommand;
+    BearCommands["damping"] = damping;
+    MemoryManager::getInstance().LEG_COMMAND->setVal(BearCommands);
+}
+
+bool BruceRobotStatus::isDamping()
+{
+    unordered_map<string, MatrixXd> legData = MemoryManager::getInstance().LEG_STATE->getVal();
+    if(legData["damping"](0,0) == 0.0)
+        return false;
+    else
+        return true;
+}
+
+double BruceRobotStatus::getTime()
+{
+    if(1)//(SIMULATION)  //need to implement a simulation global flag
+    {
+        unordered_map<string, MatrixXd> simData = MemoryManager::getInstance().SIMULATOR_STATE->getVal();
+        return simData["time_stamp"](0,0);
+    }
+    else
+    {
+        auto now = chrono::system_clock::now();
+        return chrono::duration<double>(now.time_since_epoch()).count();
+    }
+}
+
+void BruceRobotStatus::sleep(double dt)
+{
+    if(1) //(SIMULATION) //need to implement a simulation global flag
+    {
+        double t0 = BruceRobotStatus::getTime();
+        while(BruceRobotStatus::getTime() - t0 < dt)
+        {
+            //do nothing
+        }
+    }
+    else
+    {
+        this_thread::sleep_for(std::chrono::duration<double>(dt));
+    }
+}
+
+bool BruceRobotStatus::threadError(double dt)
+{
+    // not to be implemented yet
+}
+
+void BruceRobotStatus::stopThreading()
+{
+    // not to be implemented yet
 }

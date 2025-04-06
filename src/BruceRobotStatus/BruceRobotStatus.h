@@ -4,6 +4,21 @@
 #include <unordered_map>
 
 
+enum BearModes
+{
+    torque = 0,
+    velocity,
+    position,
+    force
+};
+
+enum DXLModes
+{
+    dxl_position = 3,
+    velocity_velocity = 1,
+    extended_position = 4,
+    PWM = 16
+};
 
 class BruceRobotStatus{
 
@@ -80,7 +95,7 @@ class BruceRobotStatus{
         std::unordered_map<std::string, std::unordered_map<std::string, double>> joints;
         
         //gamepad data
-        std::unordered_map<std::string, Eigen::MatrixXd> gamepad;
+        std::unordered_map<std::string, double> gamepad;
 
         //sensor
         Eigen::MatrixXd imuAccel;
@@ -127,7 +142,8 @@ class BruceRobotStatus{
         void updateSenseStatus(void);
         void updatePlanStatus(void);
         void updateInputStatus(void);
-        void updateLegStatus(void);
+
+        void updateLegStatus(bool torque = false);
 
         void setCommandLegPositions(void);
         void setCommandLegTorques(void);
@@ -142,7 +158,7 @@ class BruceRobotStatus{
         static void dampingRobot(void);
         static bool isDamping(void);
         static double getTime(void);
-        static void sleep(double t);
+        static void sleep(double);
 
         //could not be implemented
         bool threadError(double dt);
