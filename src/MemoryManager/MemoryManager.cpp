@@ -30,9 +30,9 @@ void MemoryManager::initSharedMemory(bool init)
     //Sense State
     SENSE_STATE = make_unique<SharedMemory>("BRUCE", "SENSE_STATE", init);
     SENSE_STATE->addBlock("time_stamp", MatrixXd::Zero(1,1));
-    SENSE_STATE->addBlock("imu_acceleration", MatrixXd::Zero(1,3));
-    SENSE_STATE->addBlock("imu_ang_rate", MatrixXd::Zero(1,3));
-    SENSE_STATE->addBlock("foot_contacts", MatrixXd::Zero(1,4));
+    SENSE_STATE->addBlock("imu_acceleration", MatrixXd::Zero(3,1));
+    SENSE_STATE->addBlock("imu_ang_rate", MatrixXd::Zero(3,1));
+    SENSE_STATE->addBlock("foot_contacts", MatrixXd::Zero(4,1));
 
     //Gamepad State
     GAMEPAD_STATE = make_unique<SharedMemory>("BRUCE", "GAMEPAD_STATE", init);
@@ -66,18 +66,18 @@ void MemoryManager::initSharedMemory(bool init)
     //Leg State
     LEG_STATE = make_unique<SharedMemory>("BRUCE", "LEG_STATE", init);
     LEG_STATE->addBlock("time_stamp", MatrixXd::Zero(1,1));
-    LEG_STATE->addBlock("joint_positions", MatrixXd::Zero(1,10));
-    LEG_STATE->addBlock("joint_velocities", MatrixXd::Zero(1,10));
-    LEG_STATE->addBlock("joint_torques", MatrixXd::Zero(1,10));
+    LEG_STATE->addBlock("joint_positions", MatrixXd::Zero(10,1));
+    LEG_STATE->addBlock("joint_velocities", MatrixXd::Zero(10,1));
+    LEG_STATE->addBlock("joint_torques", MatrixXd::Zero(10,1));
     LEG_STATE->addBlock("temperature", MatrixXd::Zero(1,1));
     LEG_STATE->addBlock("voltage", MatrixXd::Zero(1,1));
 
     //Leg Command
     LEG_COMMAND = make_unique<SharedMemory>("BRUCE", "LEG_COMMAND", init);
     LEG_COMMAND->addBlock("time_stamp", MatrixXd::Zero(1,1));
-    LEG_COMMAND->addBlock("goal_torques", MatrixXd::Zero(1,10));
-    LEG_COMMAND->addBlock("goal_positions", MatrixXd::Zero(1,10));
-    LEG_COMMAND->addBlock("goal_velocities", MatrixXd::Zero(1,10));
+    LEG_COMMAND->addBlock("goal_torques", MatrixXd::Zero(10,1));
+    LEG_COMMAND->addBlock("goal_positions", MatrixXd::Zero(10,1));
+    LEG_COMMAND->addBlock("goal_velocities", MatrixXd::Zero(10,1));
     LEG_COMMAND->addBlock("BEAR_mode", MatrixXd::Zero(1,1));
     LEG_COMMAND->addBlock("BEAR_enable", MatrixXd::Zero(1,1));
     LEG_COMMAND->addBlock("damping", MatrixXd::Zero(1,1));
@@ -85,73 +85,73 @@ void MemoryManager::initSharedMemory(bool init)
     //Arm State
     ARM_STATE = make_unique<SharedMemory>("BRUCE", "ARM_STATE", init);
     ARM_STATE->addBlock("time_stamp", MatrixXd::Zero(1,1));
-    ARM_STATE->addBlock("joint_positions", MatrixXd::Zero(1,6));
-    ARM_STATE->addBlock("joint_velocities", MatrixXd::Zero(1,6));
+    ARM_STATE->addBlock("joint_positions", MatrixXd::Zero(6,1));
+    ARM_STATE->addBlock("joint_velocities", MatrixXd::Zero(6,1));
 
     //Arm Command
     ARM_COMMAND = make_unique<SharedMemory>("BRUCE", "ARM_COMMAND", init);
     ARM_COMMAND->addBlock("time_stamp", MatrixXd::Zero(1,1));
-    ARM_COMMAND->addBlock("goal_positions", MatrixXd::Zero(1,6));
-    ARM_COMMAND->addBlock("goal_velocities", MatrixXd::Zero(1,6));
+    ARM_COMMAND->addBlock("goal_positions", MatrixXd::Zero(6,1));
+    ARM_COMMAND->addBlock("goal_velocities", MatrixXd::Zero(6,1));
     ARM_COMMAND->addBlock("DXL_mode", MatrixXd::Zero(1,1));
     ARM_COMMAND->addBlock("DXL_enable", MatrixXd::Zero(1,1));
 
     //Estimator State
     ESTIMATOR_STATE = make_unique<SharedMemory>("BRUCE", "ESTIMATOR_STATE", init);
     ESTIMATOR_STATE->addBlock("time_stamp", MatrixXd::Zero(1,1));
-    ESTIMATOR_STATE->addBlock("body_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("body_velocity", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("body_acceleration", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("body_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("body_velocity", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("body_acceleration", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("body_rot_matrix", MatrixXd::Identity(3,3));
-    ESTIMATOR_STATE->addBlock("body_euler_ang", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("body_euler_ang", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("body_yaw_ang", MatrixXd::Zero(1,1));
-    ESTIMATOR_STATE->addBlock("body_ang_rate", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("com_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("com_velocity", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("ang_momentum", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("body_ang_rate", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("com_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("com_velocity", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("ang_momentum", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("H_matrix", MatrixXd::Zero(16,16));
-    ESTIMATOR_STATE->addBlock("CG_vector", MatrixXd::Zero(1,16));
+    ESTIMATOR_STATE->addBlock("CG_vector", MatrixXd::Zero(16,1));
     ESTIMATOR_STATE->addBlock("AG_matrix", MatrixXd::Zero(6,16));
-    ESTIMATOR_STATE->addBlock("dAGdq_vector", MatrixXd::Zero(1,6));
-    ESTIMATOR_STATE->addBlock("foot_contacts", MatrixXd::Zero(1,4));
+    ESTIMATOR_STATE->addBlock("dAGdq_vector", MatrixXd::Zero(6,1));
+    ESTIMATOR_STATE->addBlock("foot_contacts", MatrixXd::Zero(4,1));
 
     ESTIMATOR_STATE->addBlock("right_foot_rot_matrix", MatrixXd::Zero(3,3));
-    ESTIMATOR_STATE->addBlock("right_foot_ang_rate", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("right_foot_ang_rate", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("right_foot_Jw", MatrixXd::Zero(3,16));
-    ESTIMATOR_STATE->addBlock("right_foot_dJwdq", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("right_foot_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("right_foot_velocity", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("right_toe_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("right_toe_velocity", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("right_foot_dJwdq", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("right_foot_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("right_foot_velocity", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("right_toe_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("right_toe_velocity", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("right_toe_Jv", MatrixXd::Zero(3,16));
-    ESTIMATOR_STATE->addBlock("right_toe_dJvdq", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("right_heel_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("right_heel_velocity", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("right_toe_dJvdq", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("right_heel_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("right_heel_velocity", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("right_heel_Jv", MatrixXd::Zero(3,16));
-    ESTIMATOR_STATE->addBlock("right_heel_dJvdq", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("right_ankle_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("right_ankle_velocity", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("right_heel_dJvdq", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("right_ankle_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("right_ankle_velocity", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("right_ankle_Jv", MatrixXd::Zero(3,16));
-    ESTIMATOR_STATE->addBlock("right_ankle_dJvdq", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("right_ankle_dJvdq", MatrixXd::Zero(3,1));
 
     ESTIMATOR_STATE->addBlock("left_foot_rot_matrix", MatrixXd::Zero(3,3));
-    ESTIMATOR_STATE->addBlock("left_foot_ang_rate", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("left_foot_ang_rate", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("left_foot_Jw", MatrixXd::Zero(3,16));
-    ESTIMATOR_STATE->addBlock("left_foot_dJwdq", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("left_foot_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("left_foot_velocity", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("left_toe_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("left_toe_velocity", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("left_foot_dJwdq", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("left_foot_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("left_foot_velocity", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("left_toe_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("left_toe_velocity", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("left_toe_Jv", MatrixXd::Zero(3,16));
-    ESTIMATOR_STATE->addBlock("left_toe_dJvdq", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("left_heel_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("left_heel_velocity", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("left_toe_dJvdq", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("left_heel_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("left_heel_velocity", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("left_heel_Jv", MatrixXd::Zero(3,16));
-    ESTIMATOR_STATE->addBlock("left_heel_dJvdq", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("left_ankle_position", MatrixXd::Zero(1,3));
-    ESTIMATOR_STATE->addBlock("left_ankle_velocity", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("left_heel_dJvdq", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("left_ankle_position", MatrixXd::Zero(3,1));
+    ESTIMATOR_STATE->addBlock("left_ankle_velocity", MatrixXd::Zero(3,1));
     ESTIMATOR_STATE->addBlock("left_ankle_Jv", MatrixXd::Zero(3,16));
-    ESTIMATOR_STATE->addBlock("left_ankle_dJvdq", MatrixXd::Zero(1,3));
+    ESTIMATOR_STATE->addBlock("left_ankle_dJvdq", MatrixXd::Zero(3,1));
 
     //Estimator Command
     ESTIMATOR_COMMAND = make_unique<SharedMemory>("BRUCE", "ESTIMATOR_COMMAND", init);
@@ -162,38 +162,38 @@ void MemoryManager::initSharedMemory(bool init)
     PLANNER_COMMAND->addBlock("time_stamp", MatrixXd::Zero(1,1));
     PLANNER_COMMAND->addBlock("mode", MatrixXd::Zero(1,1));
     PLANNER_COMMAND->addBlock("phase", MatrixXd::Zero(1,1));
-    PLANNER_COMMAND->addBlock("body_position", MatrixXd::Zero(1,3));
-    PLANNER_COMMAND->addBlock("body_velocity", MatrixXd::Zero(1,3));
+    PLANNER_COMMAND->addBlock("body_position", MatrixXd::Zero(3,1));
+    PLANNER_COMMAND->addBlock("body_velocity", MatrixXd::Zero(3,1));
     PLANNER_COMMAND->addBlock("body_rot_matrix", MatrixXd::Identity(3,3));
-    PLANNER_COMMAND->addBlock("body_ang_rate", MatrixXd::Zero(1,3));
-    PLANNER_COMMAND->addBlock("com_position", MatrixXd::Zero(1,3));
-    PLANNER_COMMAND->addBlock("com_velocity", MatrixXd::Zero(1,3));
+    PLANNER_COMMAND->addBlock("body_ang_rate", MatrixXd::Zero(3,1));
+    PLANNER_COMMAND->addBlock("com_position", MatrixXd::Zero(3,1));
+    PLANNER_COMMAND->addBlock("com_velocity", MatrixXd::Zero(3,1));
 
     PLANNER_COMMAND->addBlock("right_foot_phase", MatrixXd::Zero(1,1));
-    PLANNER_COMMAND->addBlock("right_foot_position", MatrixXd::Zero(1,3));
-    PLANNER_COMMAND->addBlock("right_foot_velocity", MatrixXd::Zero(1,3));
+    PLANNER_COMMAND->addBlock("right_foot_position", MatrixXd::Zero(3,1));
+    PLANNER_COMMAND->addBlock("right_foot_velocity", MatrixXd::Zero(3,1));
     PLANNER_COMMAND->addBlock("right_foot_rot_matrix", MatrixXd::Zero(3,3));
-    PLANNER_COMMAND->addBlock("right_foot_ang_rate", MatrixXd::Zero(1,3));
+    PLANNER_COMMAND->addBlock("right_foot_ang_rate", MatrixXd::Zero(3,1));
 
     PLANNER_COMMAND->addBlock("left_foot_phase", MatrixXd::Zero(1,1));
-    PLANNER_COMMAND->addBlock("left_foot_position", MatrixXd::Zero(1,3));
-    PLANNER_COMMAND->addBlock("left_foot_velocity", MatrixXd::Zero(1,3));
+    PLANNER_COMMAND->addBlock("left_foot_position", MatrixXd::Zero(3,1));
+    PLANNER_COMMAND->addBlock("left_foot_velocity", MatrixXd::Zero(3,1));
     PLANNER_COMMAND->addBlock("left_foot_rot_matrix", MatrixXd::Zero(3,3));
-    PLANNER_COMMAND->addBlock("left_foot_ang_rate", MatrixXd::Zero(1,3));
+    PLANNER_COMMAND->addBlock("left_foot_ang_rate", MatrixXd::Zero(3,1));
 
     //User Command
     USER_COMMAND = make_unique<SharedMemory>("BRUCE", "USER_COMMAND", init);
     USER_COMMAND->addBlock("time_stamp", MatrixXd::Zero(1,1));
     USER_COMMAND->addBlock("mode", MatrixXd::Zero(1,1));
-    USER_COMMAND->addBlock("com_xy_velocity", MatrixXd::Zero(1,2));
+    USER_COMMAND->addBlock("com_xy_velocity", MatrixXd::Zero(2,1));
     USER_COMMAND->addBlock("yaw_rate", MatrixXd::Zero(1,1));
-    USER_COMMAND->addBlock("com_position_change_scaled", MatrixXd::Zero(1,3));
-    USER_COMMAND->addBlock("body_euler_angle_change", MatrixXd::Zero(1,3));
+    USER_COMMAND->addBlock("com_position_change_scaled", MatrixXd::Zero(3,1));
+    USER_COMMAND->addBlock("body_euler_angle_change", MatrixXd::Zero(3,1));
     USER_COMMAND->addBlock("right_foot_yaw_angle_change", MatrixXd::Zero(1,1));
     USER_COMMAND->addBlock("left_foot_yaw_angle_change", MatrixXd::Zero(1,1));
     USER_COMMAND->addBlock("foot_clearance", MatrixXd::Zero(1,1));
     USER_COMMAND->addBlock("cooling_speed", MatrixXd::Zero(1,1));
-    USER_COMMAND->addBlock("dcm_offset_compensation", MatrixXd::Zero(1,2));
+    USER_COMMAND->addBlock("dcm_offset_compensation", MatrixXd::Zero(2,1));
     USER_COMMAND->addBlock("com_offset_compensation", MatrixXd::Zero(1,1));
 
 

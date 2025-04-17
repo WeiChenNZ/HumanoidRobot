@@ -17,45 +17,45 @@ void GazeboBridge::initSharedMemory(void)
 
     JOINT_STATE = make_unique<SharedMemory>(robotName, "STATUS", false);
     JOINT_STATE->addBlock("time", MatrixXd::Zero(1, 1));
-    JOINT_STATE->addBlock("position", MatrixXd::Zero(1, numJoints));
-    JOINT_STATE->addBlock("velocity", MatrixXd::Zero(1, numJoints));
-    JOINT_STATE->addBlock("force", MatrixXd::Zero(1, numJoints));
+    JOINT_STATE->addBlock("position", MatrixXd::Zero(numJoints, 1));
+    JOINT_STATE->addBlock("velocity", MatrixXd::Zero(numJoints, 1));
+    JOINT_STATE->addBlock("force", MatrixXd::Zero(numJoints, 1));
 
     JOINT_TORQUE_COMMAND = make_unique<SharedMemory>(robotName, "FORCE_COMMS", false);
-    JOINT_TORQUE_COMMAND->addBlock("data", MatrixXd::Zero(1, numJoints));
+    JOINT_TORQUE_COMMAND->addBlock("data", MatrixXd::Zero(numJoints, 1));
 
     POSITION_PID_GAIN = make_unique<SharedMemory>(robotName, "PID_GAINS", false);
-    POSITION_PID_GAIN->addBlock("data", MatrixXd::Zero(1, 3*numJoints));
+    POSITION_PID_GAIN->addBlock("data", MatrixXd::Zero(3*numJoints, 1));
 
     JOINT_POSITION_COMMAND = make_unique<SharedMemory>(robotName, "POS_COMMS", false);
-    JOINT_POSITION_COMMAND->addBlock("data", MatrixXd::Zero(1, numJoints));
+    JOINT_POSITION_COMMAND->addBlock("data", MatrixXd::Zero(numJoints, 1));
 
     JOINT_LIMIT = make_unique<SharedMemory>(robotName, "JOINT_LIMITS", false);
-    JOINT_LIMIT->addBlock("data", MatrixXd::Zero(1, 2*numJoints));
+    JOINT_LIMIT->addBlock("data", MatrixXd::Zero(2*numJoints, 1));
 
     TORQUE_LIMIT = make_unique<SharedMemory>(robotName, "EFFORT_LIMITS", false);
-    TORQUE_LIMIT->addBlock("data", MatrixXd::Zero(1, 2*numJoints));
+    TORQUE_LIMIT->addBlock("data", MatrixXd::Zero(2*numJoints, 1));
 
     BODY_POSE = make_unique<SharedMemory>(robotName, "BODY_POSE", false);
     BODY_POSE->addBlock("time", MatrixXd::Zero(1, 1));
-    BODY_POSE->addBlock("position", MatrixXd::Zero(1, 3));
-    BODY_POSE->addBlock("quaternion", MatrixXd::Zero(1, 4));
-    BODY_POSE->addBlock("euler_angles", MatrixXd::Zero(1, 3));
-    BODY_POSE->addBlock("velocity", MatrixXd::Zero(1, 3));
+    BODY_POSE->addBlock("position", MatrixXd::Zero(3, 1));
+    BODY_POSE->addBlock("quaternion", MatrixXd::Zero(4, 1));
+    BODY_POSE->addBlock("euler_angles", MatrixXd::Zero(3, 1));
+    BODY_POSE->addBlock("velocity", MatrixXd::Zero(3, 1));
     
     IMU_STATE = make_unique<SharedMemory>(robotName, "IMU_STATES", false);
     IMU_STATE->addBlock("time", MatrixXd::Zero(1, 1));
-    IMU_STATE->addBlock("accel", MatrixXd::Zero(1, 3));
-    IMU_STATE->addBlock("ang_rate", MatrixXd::Zero(1, 3));
+    IMU_STATE->addBlock("accel", MatrixXd::Zero(3, 1));
+    IMU_STATE->addBlock("ang_rate", MatrixXd::Zero(3, 1));
 
     LIMB_CONTACT = make_unique<SharedMemory>(robotName, "LIMB_CONTACTS", false);
-    LIMB_CONTACT->addBlock("on", MatrixXd::Zero(1, numContactSensors));
+    LIMB_CONTACT->addBlock("on", MatrixXd::Zero(numContactSensors, 1));
 
     BODY_FORCE = make_unique<SharedMemory>(robotName, "BODY_FORCE", false);
-    BODY_FORCE->addBlock("force", MatrixXd::Zero(1, 3));
+    BODY_FORCE->addBlock("force", MatrixXd::Zero(3, 1));
 
     BODY_TORQUE = make_unique<SharedMemory>(robotName, "BODY_TORQUE", false);
-    BODY_TORQUE->addBlock("torque", MatrixXd::Zero(1, 3));
+    BODY_TORQUE->addBlock("torque", MatrixXd::Zero(3, 1));
 
     try
     {
@@ -216,13 +216,13 @@ void GazeboBridge::stepSimulation(void)
 
 void GazeboBridge::resetSimulation(Eigen::MatrixXd initPos)
 {
-    if(initPos != MatrixXd::Zero(1, numJoints))
+    if(initPos != MatrixXd::Zero(numJoints, 1))
     {
         setCommandPosition(initPos);
     }
     else
     {
-        setCommandPosition(MatrixXd::Zero(1, numJoints));
+        setCommandPosition(MatrixXd::Zero(numJoints, 1));
     }
     const char* cmd = "reset_simulation";
     int num = send(worldSocket, cmd, strlen(cmd), 0);
@@ -254,12 +254,12 @@ void GazeboBridge::setStepSize(double stepSize)
 
 void GazeboBridge::setAllPositionPidGains(Eigen::MatrixXd p,Eigen::MatrixXd i,Eigen::MatrixXd d)
 {
-    MatrixXd pid(1, 3*numJoints); //3*16 on bruce
+    MatrixXd pid(3*numJoints, 1); //3*16 on bruce
     for(int j = 0; j < p.size(); j++)
     {
-        pid(0, 3*j)     = p(0, j);
-        pid(0, 3*j + 1) = i(0, j);
-        pid(0, 3*j + 2) = d(0, j);
+        pid(3*j, 0)     = p(j, 0);
+        pid(3*j + 1, 0) = i(j, 0);
+        pid(3*j + 2, 0) = d(j, 0);
     }
     unordered_map<string, MatrixXd> data = {{"data", pid}};
     POSITION_PID_GAIN->setVal(data);
@@ -272,9 +272,9 @@ void GazeboBridge::setAllPositionPidGains(Eigen::MatrixXd p,Eigen::MatrixXd i,Ei
 void GazeboBridge::setJointPositionPidGains(int index,double p,double i,double d)
 {
     unordered_map<string, MatrixXd> data = POSITION_PID_GAIN->getVal();
-    data["data"](0, 3*index)     = p;
-    data["data"](0, 3*index + 1) = i;
-    data["data"](0, 3*index + 2) = d;
+    data["data"](3*index, 0)     = p;
+    data["data"](3*index + 1, 0) = i;
+    data["data"](3*index + 2, 0) = d;
     POSITION_PID_GAIN->setVal(data);
 
     const char* cmd = "set_position_pid_gains";
@@ -295,11 +295,11 @@ void GazeboBridge::setOperatingMode(int mode)
 
 void GazeboBridge::setJointLimits(MatrixXd lower, MatrixXd upper)
 {
-    unordered_map<string, MatrixXd> data = {{"data", MatrixXd::Zero(1, 2*numJoints)}};
+    unordered_map<string, MatrixXd> data = {{"data", MatrixXd::Zero(2*numJoints, 1)}};
     for(int i = 0; i < lower.size(); i++)
     {
-        data["data"](0, 2*i)     = lower(0,i);
-        data["data"](0, 2*i + 1) = upper(0, i);
+        data["data"](2*i, 0)     = lower(i, 0);
+        data["data"](2*i + 1, 0) = upper(i, 0);
     }
     JOINT_LIMIT->setVal(data);
 
@@ -310,11 +310,11 @@ void GazeboBridge::setJointLimits(MatrixXd lower, MatrixXd upper)
 
 void GazeboBridge::setTorqueLimits(MatrixXd lower, MatrixXd upper)
 {
-    unordered_map<string, MatrixXd> data = {{"data", MatrixXd::Zero(1, 2*numJoints)}};
+    unordered_map<string, MatrixXd> data = {{"data", MatrixXd::Zero(2*numJoints, 1)}};
     for(int i = 0; i < lower.size(); i++)
     {
-        data["data"](0, 2*i)     = lower(0,i);
-        data["data"](0, 2*i + 1) = upper(0, i);
+        data["data"](2*i, 0)     = lower(i, 0);
+        data["data"](2*i + 1, 0) = upper(i, 0);
     }
     TORQUE_LIMIT->setVal(data);
 

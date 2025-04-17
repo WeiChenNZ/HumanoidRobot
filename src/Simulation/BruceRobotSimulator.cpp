@@ -15,25 +15,25 @@ BruceRobotSimulator::BruceRobotSimulator(std::shared_ptr<KinematicsInterface> ki
     numJoints = numLegs*numJointsPerLeg + numArms*numJointsPerArm;
     numContactSensors = 4;
 
-    legP = MatrixXd::Zero(1,numJointsPerLeg);
+    legP = MatrixXd::Zero(numJointsPerLeg, 1);
     legP << 265, 150, 80, 80, 30;
 
-    legI = MatrixXd::Zero(1,numJointsPerLeg);
+    legI = MatrixXd::Zero(numJointsPerLeg, 1);
     
-    legD = MatrixXd::Zero(1,numJointsPerLeg);
+    legD = MatrixXd::Zero(numJointsPerLeg, 1);
     legD << 1., 2.3, 0.8, 0.8, 0.003;
 
-    armP = MatrixXd::Zero(1,numJointsPerArm);
+    armP = MatrixXd::Zero(numJointsPerArm, 1);
     armP << 1.6, 1.6, 1.6;
 
-    armI = MatrixXd::Zero(1,numJointsPerArm);
+    armI = MatrixXd::Zero(numJointsPerArm, 1);
     
-    armD = MatrixXd::Zero(1,numJointsPerArm);
+    armD = MatrixXd::Zero(numJointsPerArm, 1);
     armD << 0.03, 0.03, 0.03;
 
-    P.resize(1, 2*numJointsPerLeg + 2*numJointsPerArm);
-    I.resize(1, 2*numJointsPerLeg + 2*numJointsPerArm);
-    D.resize(1, 2*numJointsPerLeg + 2*numJointsPerArm);
+    P.resize(2*numJointsPerLeg + 2*numJointsPerArm, 1);
+    I.resize(2*numJointsPerLeg + 2*numJointsPerArm, 1);
+    D.resize(2*numJointsPerLeg + 2*numJointsPerArm, 1);
     P << legP, legP, armP, armP;
     I << legI, legI, armI, armI;
     D << legD, legD, armD, armD;
@@ -79,7 +79,7 @@ void BruceRobotSimulator::initializeSimulator(void)
     double ar1 = -0.7, ar2 = 1.3, ar3 = 2.0;
     double al1 = 0.7, al2 = -1.3, al3 = -2.0;
 
-    MatrixXd initPos(1, numJoints);
+    MatrixXd initPos(numJoints, 1);
     initPos << lr1,lr2,lr3,lr4,lr5,ll1,ll2,ll3,ll4,ll5,ar1,ar2,ar3,al1,al2,al3;
 
     gazeboBridge->resetSimulation(initPos);
@@ -89,10 +89,10 @@ void BruceRobotSimulator::initializeSimulator(void)
 void BruceRobotSimulator::writePosition(Eigen::MatrixXd legPos, Eigen::MatrixXd armPos)
 {
     MatrixXd goalPos(1, numJoints);
-    goalPos << legPos(0,0) + M_PI_2, legPos(0,1) - M_PI_2, legPos(0,2), legPos(0,3), legPos(0,4),
-               legPos(0,5) + M_PI_2, legPos(0,6) - M_PI_2, legPos(0,7), legPos(0,8), legPos(0,9),
-               armPos(0,0), armPos(0,1), armPos(0,2),
-               armPos(0,3), armPos(0,4), armPos(0,5);
+    goalPos << legPos(0,0) + M_PI_2, legPos(1,0) - M_PI_2, legPos(2,0), legPos(3,0), legPos(4,0),
+               legPos(5,0) + M_PI_2, legPos(6,0) - M_PI_2, legPos(7,0), legPos(8,0), legPos(9,0),
+               armPos(0,0), armPos(1,0), armPos(2,0),
+               armPos(3,0), armPos(4,0), armPos(5,0);
 
     if(simulationMode != SimModes::POSITION)   
     {
@@ -105,11 +105,11 @@ void BruceRobotSimulator::writePosition(Eigen::MatrixXd legPos, Eigen::MatrixXd 
 
 void BruceRobotSimulator::writeTorque(Eigen::MatrixXd legTor, Eigen::MatrixXd armTor)
 {
-    MatrixXd gaolTor(1, numJoints);
-    gaolTor << legTor(0,0), legTor(0,1), legTor(0,2), legTor(0,3), legTor(0,4),
-               legTor(0,5), legTor(0,6), legTor(0,7), legTor(0,8), legTor(0,9),
-               armTor(0,0), armTor(0,1), armTor(0,2),
-               armTor(0,3), armTor(0,4), armTor(0,5);
+    MatrixXd gaolTor(numJoints,1);
+    gaolTor << legTor(0,0), legTor(1,0), legTor(2,0), legTor(3,0), legTor(4,0),
+               legTor(5,0), legTor(6,0), legTor(7,0), legTor(8,0), legTor(9,0),
+               armTor(0,0), armTor(1,0), armTor(2,0),
+               armTor(3,0), armTor(4,0), armTor(5,0);
 
     if(simulationMode != SimModes::TORQUE)
     {
@@ -177,12 +177,12 @@ void BruceRobotSimulator::mainLoop(void)
 
 MatrixXd BruceRobotSimulator::getArmGoalTorques(MatrixXd pos, MatrixXd vel)
 {
-    MatrixXd armGoalTorque = MatrixXd::Zero(1,6);
+    MatrixXd armGoalTorque = MatrixXd::Zero(6,1);
     for(int i = 0; i < 6; i++)
     {
         //PD controller
-        armGoalTorque(0,i) = armP(0,i % numJointsPerArm)*(pos(0,i) - qArm(0,i)) +
-                             armD(0,i % numJointsPerArm)*(vel(0,i) - dqArm(0,i));
+        armGoalTorque(i,0) = armP(i % numJointsPerArm,0)*(pos(i,0) - qArm(i,0)) +
+                             armD(i % numJointsPerArm,0)*(vel(i,0) - dqArm(i,0));
     }
 
     return armGoalTorque;
@@ -198,17 +198,17 @@ void BruceRobotSimulator::updateSensorInfo(void)
     MatrixXd dq = gazeboBridge->getCurrentVelocity();
     MatrixXd tau = gazeboBridge->getCurrentForce();
 
-    qLeg = MatrixXd::Zero(1,10);
-    qLeg << q(0,0) - M_PI_2, q(0,1) + M_PI_2, q(0,2), q(0,3), q(0,4),
-            q(0,5) - M_PI_2, q(0,6) + M_PI_2, q(0,7), q(0,8), q(0,9);
+    qLeg = MatrixXd::Zero(10,0);
+    qLeg << q(0,0) - M_PI_2, q(1,0) + M_PI_2, q(2,0), q(3,0), q(4,0),
+            q(5,0) - M_PI_2, q(6,0) + M_PI_2, q(7,0), q(8,0), q(9,0);
     
-    qArm = q.block(0,10,1,6);
-    dqLeg = dq.block(0,0,1,10);
-    dqArm = dq.block(0,10,1,6);
+    qArm = q.block(10,0,6,1);
+    dqLeg = dq.block(0,0,10,1);
+    dqArm = dq.block(10,0,6,1);
 
     unordered_map<string, MatrixXd> legData{{"joint_positions", qLeg},
                                             {"joint_velocities", dqLeg},
-                                            {"joint_torques", tau.block(0,0,1,10)}};
+                                            {"joint_torques", tau.block(0,0,10,1)}};
 
     unordered_map<string, MatrixXd> armData{{"joint_positions", qArm},
                                             {"joint_velocities", dqArm}};
@@ -218,8 +218,8 @@ void BruceRobotSimulator::updateSensorInfo(void)
 
     //get IMU status
     rotMat = gazeboBridge->getBodyRotMat();
-    accel = gazeboBridge->getImuAcceleration().transpose();
-    omega = rotMat.transpose() * gazeboBridge->getImuAngularRate().transpose();
+    accel = gazeboBridge->getImuAcceleration();
+    omega = rotMat.transpose() * gazeboBridge->getImuAngularRate();
     footContacts = gazeboBridge->getFootContacts();
 
     unordered_map<string, MatrixXd> senseData{{"imu_acceleration",accel},
@@ -231,15 +231,15 @@ void BruceRobotSimulator::updateSensorInfo(void)
 
 void BruceRobotSimulator::updateEstimation(void)
 {
-    vector<double> posAndVel{qLeg(0,0),qLeg(0,1),qLeg(0,2),qLeg(0,3),qLeg(0,4),
-                             qLeg(0,5),qLeg(0,6),qLeg(0,7),qLeg(0,8),qLeg(0,9),
-                             dqLeg(0,0),dqLeg(0,1),dqLeg(0,2),dqLeg(0,3),dqLeg(0,4),
-                             dqLeg(0,5),dqLeg(0,6),dqLeg(0,7),dqLeg(0,8),dqLeg(0,9)};
+    vector<double> posAndVel{qLeg(0,0),qLeg(1,0),qLeg(2,0),qLeg(3,0),qLeg(4,0),
+                             qLeg(5,0),qLeg(6,0),qLeg(7,0),qLeg(8,0),qLeg(9,0),
+                             dqLeg(0,0),dqLeg(1,0),dqLeg(2,0),dqLeg(3,0),dqLeg(4,0),
+                             dqLeg(5,0),dqLeg(6,0),dqLeg(7,0),dqLeg(8,0),dqLeg(9,0)};
     // kinematics->forwardKinematicsLeg()
     MatrixXd Rwb = rotMat;
     MatrixXd wbb = omega;
-    MatrixXd pwb = gazeboBridge->getBodyPosition().transpose();
-    MatrixXd vwb = gazeboBridge->getBodyVelocity().transpose();
+    MatrixXd pwb = gazeboBridge->getBodyPosition();
+    MatrixXd vwb = gazeboBridge->getBodyVelocity();
     MatrixXd awb = Rwb * accel;
     MatrixXd vbb = Rwb * vwb;
     double yawAngle = atan2(Rwb(1,0), Rwb(0,0));
@@ -281,16 +281,16 @@ void BruceRobotSimulator::updateEstimation(void)
     fkInput["b_left_foot_dJw"] = kinResult["b_left_foot_dJw"];
 
     fkInput["rd1"] = MatrixXd::Constant(1,1,dqLeg(0,0));
-    fkInput["rd2"] = MatrixXd::Constant(1,1,dqLeg(0,1));
-    fkInput["rd3"] = MatrixXd::Constant(1,1,dqLeg(0,2));
-    fkInput["rd4"] = MatrixXd::Constant(1,1,dqLeg(0,3));
-    fkInput["rd5"] = MatrixXd::Constant(1,1,dqLeg(0,4));
+    fkInput["rd2"] = MatrixXd::Constant(1,1,dqLeg(1,0));
+    fkInput["rd3"] = MatrixXd::Constant(1,1,dqLeg(2,0));
+    fkInput["rd4"] = MatrixXd::Constant(1,1,dqLeg(3,0));
+    fkInput["rd5"] = MatrixXd::Constant(1,1,dqLeg(4,0));
 
-    fkInput["ld1"] = MatrixXd::Constant(1,1,dqLeg(0,5));
-    fkInput["ld2"] = MatrixXd::Constant(1,1,dqLeg(0,6));
-    fkInput["ld3"] = MatrixXd::Constant(1,1,dqLeg(0,7));
-    fkInput["ld4"] = MatrixXd::Constant(1,1,dqLeg(0,8));
-    fkInput["ld5"] = MatrixXd::Constant(1,1,dqLeg(0,9));
+    fkInput["ld1"] = MatrixXd::Constant(1,1,dqLeg(5,0));
+    fkInput["ld2"] = MatrixXd::Constant(1,1,dqLeg(6,0));
+    fkInput["ld3"] = MatrixXd::Constant(1,1,dqLeg(7,0));
+    fkInput["ld4"] = MatrixXd::Constant(1,1,dqLeg(8,0));
+    fkInput["ld5"] = MatrixXd::Constant(1,1,dqLeg(9,0));
 
     unordered_map<string, MatrixXd>fkResult = kinematics->forwardKinematicsRobot(fkInput);
 
@@ -302,19 +302,19 @@ void BruceRobotSimulator::updateEstimation(void)
     //update estimation data
     unordered_map<string, MatrixXd> estimationData;
     estimationData["time_stamp"] = gazeboBridge->getCurrentTime();
-    estimationData["body_position"] = pwb.transpose(); //1x3
-    estimationData["body_velocity"] = vwb.transpose(); //1x3
-    estimationData["body_acceleration"] = awb.transpose(); //1x3
+    estimationData["body_position"] = pwb; //3x1
+    estimationData["body_velocity"] = vwb; //3x1
+    estimationData["body_acceleration"] = awb; //3x1
     estimationData["body_rot_matrix"] = Rwb; //3x3
-    estimationData["body_ang_rate"] = wbb.transpose(); //3x3
+    estimationData["body_ang_rate"] = wbb; //3x1
     estimationData["body_yaw_ang"] = MatrixXd::Constant(1,1,yawAngle); //1x1
-    estimationData["com_position"] = dynamics->getPcom().transpose();
-    estimationData["com_velocity"] = dynamics->getVcom().transpose();
-    estimationData["ang_momentum"] = dynamics->getKG().transpose();
+    estimationData["com_position"] = dynamics->getPcom();
+    estimationData["com_velocity"] = dynamics->getVcom();
+    estimationData["ang_momentum"] = dynamics->getKG();
     estimationData["H_matrix"] = dynamics->getH();
-    estimationData["CG_vector"] = dynamics->getCG().transpose();
+    estimationData["CG_vector"] = dynamics->getCG();
     estimationData["AG_matrix"] = dynamics->getAG();
-    estimationData["dAGdq_vector"] = dynamics->getdAGdq().transpose();
+    estimationData["dAGdq_vector"] = dynamics->getdAGdq();
     estimationData["foot_contacts"] = footContacts;
 
     estimationData["right_foot_rot_matrix"] = fkResult["right_foot_rot_matrix"];
