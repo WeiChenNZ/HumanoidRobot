@@ -49,7 +49,7 @@ void Problem::assignVaribalesIndeces()
     variablesDim_ = offset;
 }
 
-Eigen::MatrixXd Problem::buildMatrixQ()
+void Problem::buildMatrixQ()
 {
     int n = totalVariablesDim();
     Q_ = Eigen::MatrixXd::Zero(n,n);
@@ -105,7 +105,7 @@ Eigen::MatrixXd Problem::buildMatrixQ()
     searchExpr(object_);
 }
 
-Eigen::VectorXd Problem::buildVectorP()
+void Problem::buildVectorP()
 {
     int n = totalVariablesDim();
     p_ = Eigen::VectorXd::Zero(n);
@@ -120,7 +120,10 @@ Eigen::VectorXd Problem::buildVectorP()
                 if(auto xr = dynamic_pointer_cast<ParameterExpr>(bin->rhs()))
                 {
                     int offset = variableOffset(xi->variable()->name());
-                    p_.segment(offset, xi->variable()->dim()) -= 2.0 * qf->Q() * xr->parameter()->value();
+                    if(bin->operation() == BinaryExpr::SUB)
+                        p_.segment(offset, xi->variable()->dim()) -= 2.0 * qf->Q() * xr->parameter()->value();
+                    else
+                        p_.segment(offset, xi->variable()->dim()) += 2.0 * qf->Q() * xr->parameter()->value();
                 }
                 
             }
@@ -132,7 +135,10 @@ Eigen::VectorXd Problem::buildVectorP()
                     auto param = dynamic_pointer_cast<ParameterExpr>(dot->lhs());
                     auto xr = dynamic_pointer_cast<ParameterExpr>(bin->rhs());
                     int offset = variableOffset(var->variable()->name());
-                    p_.segment(offset, var->variable()->dim()) -= 2.0* param->parameter()->value().transpose() * qf->Q() * xr->parameter()->value();
+                    if(bin->operation() == BinaryExpr::SUB)
+                        p_.segment(offset, var->variable()->dim()) -= 2.0* param->parameter()->value().transpose() * qf->Q() * xr->parameter()->value();
+                    else
+                        p_.segment(offset, var->variable()->dim()) += 2.0* param->parameter()->value().transpose() * qf->Q() * xr->parameter()->value();
                 }
             }
         }
@@ -161,7 +167,7 @@ Eigen::VectorXd Problem::buildVectorP()
     searchExpr(object_);
 }
 
-Eigen::MatrixXd Problem::buildMatrixA()
+void Problem::buildMatrixA()
 {
     int totalRows = 0;
     for(const auto& c: constraints_)
@@ -171,21 +177,20 @@ Eigen::MatrixXd Problem::buildMatrixA()
     }
 
     int n = totalVariablesDim();
-    MatrixXd A(totalRows, n);
+    A_ = MatrixXd::Zero(totalRows, n);
 
     int row = 0;
     for(const auto& c: constraints_)
     {
         auto lhs = decodeLinearExpr(c.lhs());
         int rows = lhs.bias.rows();
-        A.block(row, 0, rows, n) = lhs.coeffs;
+        A_.block(row, 0, rows, n) = lhs.coeffs;
         row += rows;
     }
 
-    return A;
 }
 
-Eigen::VectorXd Problem::buildVectorL()
+void Problem::buildVectorL()
 {
     int totalRows = 0;
     for(const auto& c: constraints_)
@@ -194,7 +199,7 @@ Eigen::VectorXd Problem::buildVectorL()
         totalRows += lhs.bias.rows();
     }
 
-    VectorXd l(totalRows);
+    l_ = VectorXd::Zero(totalRows);
     int row = 0;
 
     for(const auto& c: constraints_)
@@ -206,22 +211,21 @@ Eigen::VectorXd Problem::buildVectorL()
         switch (c.operation())
         {
             case Constraint::EQUAL:
-                l.segment(row, rows) = rhs.bias;
+                l_.segment(row, rows) = rhs.bias;
                 break;
             case Constraint::GEQ:
-                l.segment(row, rows) = rhs.bias;
+                l_.segment(row, rows) = rhs.bias;
                 break;
             case Constraint::LEQ:
-                l.segment(row, rows) = VectorXd::Constant(rows, -numeric_limits<double>::infinity());
+                l_.segment(row, rows) = VectorXd::Constant(rows, -numeric_limits<double>::infinity());
                 break;    
         }
         row += rows;
     }
 
-    return l;
 }
 
-Eigen::VectorXd Problem::buildVectorU()
+void Problem::buildVectorU()
 {
     int totalRows = 0;
     for(const auto& c: constraints_)
@@ -230,7 +234,7 @@ Eigen::VectorXd Problem::buildVectorU()
         totalRows += lhs.bias.rows();
     }
 
-    VectorXd u(totalRows);
+    u_ = VectorXd::Zero(totalRows);
     int row = 0;
 
     for(const auto& c: constraints_)
@@ -242,19 +246,18 @@ Eigen::VectorXd Problem::buildVectorU()
         switch (c.operation())
         {
             case Constraint::EQUAL:
-                u.segment(row, rows) = rhs.bias;
+                u_.segment(row, rows) = rhs.bias;
                 break;
             case Constraint::GEQ:
-                u.segment(row, rows) = VectorXd::Constant(rows, numeric_limits<double>::infinity());
+                u_.segment(row, rows) = VectorXd::Constant(rows, numeric_limits<double>::infinity());
                 break;
             case Constraint::LEQ:
-                u.segment(row, rows) = rhs.bias;
+                u_.segment(row, rows) = rhs.bias;
                 break;    
         }
         row += rows;
     }
 
-    return u;  
 }
 
 LinearizedExpr Problem::decodeLinearExpr(const SymbolicExprPtr& expr)
@@ -272,6 +275,8 @@ LinearizedExpr Problem::decodeLinearExpr(const SymbolicExprPtr& expr)
     }
     else if(auto bin = dynamic_pointer_cast<BinaryExpr>(expr))
     {
+        //support Axi + Bui +...
+        //do not support Axi + b, becuase b should be in the rhs of the constrait
         auto lhs = decodeLinearExpr(bin->lhs());
         auto rhs = decodeLinearExpr(bin->rhs());
         if(bin->operation() == BinaryExpr::ADD)
@@ -302,7 +307,13 @@ LinearizedExpr Problem::decodeLinearExpr(const SymbolicExprPtr& expr)
 
             return {coeffs, VectorXd::Zero(A.rows())};
         }
-
+    }
+    else if(auto param = dynamic_pointer_cast<ParameterExpr>(expr))
+    {
+        // b / l/ u
+        VectorXd bias = VectorXd::Zero(param->parameter()->value().rows());
+        bias = param->parameter()->value().col(0);//param is a MatrixXd(n,1), so get the 0's column
+        return {MatrixXd::Zero(bias.rows(), totalVariablesDim()), bias};
     }
 
     throw runtime_error("Unsupported expression in linear funciton!");
@@ -324,7 +335,7 @@ void Problem::updateConstraints(std::vector<Constraint>& constraints)
 {
     constraints_ = constraints;
     //assume that the decision variables are not changed
-    //so only need to update A,l,u matrices instead of update indeces and sizes
+    //so only need to update Q,P matrices instead of update indeces and sizes
     buildMatrixA();
     buildVectorL();
     buildVectorU();

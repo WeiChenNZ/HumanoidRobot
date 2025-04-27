@@ -206,6 +206,8 @@ struct LinearizedExpr
 };
 
 //Quadratic Programming Problem
+//TODO: support (xi - xk - c)' Q (xi - xk -c), where xi,xk are decision variables, c is a constant
+
 class Problem{
     public:
         enum OptimizationType{MINIMIZE, MAXIMIZE};
@@ -236,7 +238,7 @@ class Problem{
         const Eigen::VectorXd& u() const {return u_;}
 
         void updateObjectFunction(SymbolicExprPtr);
-        void updateConstraints(SymbolicExprPtr);
+        void updateConstraints(std::vector<Constraint>&);
 
         const std::vector<VariablePtr>& variables() const {return variables_;}
 
@@ -261,11 +263,11 @@ class Problem{
         Eigen::VectorXd l_;        
         Eigen::VectorXd u_;
 
-        Eigen::MatrixXd buildMatrixQ(void);
-        Eigen::MatrixXd buildMatrixA(void);
-        Eigen::VectorXd buildVectorP(void);
-        Eigen::VectorXd buildVectorL(void);
-        Eigen::VectorXd buildVectorU(void);
+        void buildMatrixQ(void);
+        void buildMatrixA(void);
+        void buildVectorP(void);
+        void buildVectorL(void);
+        void buildVectorU(void);
 
         void collectVariables(SymbolicExprPtr);
         void assignVaribalesIndeces(void);
