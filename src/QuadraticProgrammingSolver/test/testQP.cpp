@@ -10,34 +10,21 @@ int main()
     //st. 1 <= ui <= 17
     //    A * xi = b
 
-    //object
-    VariablePtr x0_v = make_shared<DecisionVariable>("x0", 3);
-    VariablePtr x1_v = make_shared<DecisionVariable>("x1", 3);
-    VariablePtr u0_v = make_shared<DecisionVariable>("u0", 3);
-    VariablePtr u1_v = make_shared<DecisionVariable>("u1", 3);
-    ParameterPtr xr_p = make_shared<Parameter>("xr", MatrixXd::Constant(3,1,2.0));
-    ParameterPtr ur_p = make_shared<Parameter>("ur", MatrixXd::Constant(3,1,5.0));
-
-    //constraint
-    ParameterPtr lu_p = make_shared<Parameter>("lu", MatrixXd::Constant(3,1,1.0));
-    ParameterPtr uu_p = make_shared<Parameter>("uu", MatrixXd::Constant(3,1,17.0));
-    ParameterPtr A_p = make_shared<Parameter>("A", MatrixXd::Constant(3,3,2.5));
-    ParameterPtr b_p = make_shared<Parameter>("b", MatrixXd::Constant(3,1,3.5));
-
     //Symbol Expressions
-    SymbolicExprPtr x0 = make_shared<DecisionVariableExpr>(x0_v);
-    SymbolicExprPtr x1 = make_shared<DecisionVariableExpr>(x1_v);
-    SymbolicExprPtr u0 = make_shared<DecisionVariableExpr>(u0_v);
-    SymbolicExprPtr u1 = make_shared<DecisionVariableExpr>(u1_v);
-    SymbolicExprPtr xr = make_shared<ParameterExpr>(xr_p);
-    SymbolicExprPtr ur = make_shared<ParameterExpr>(ur_p);
-    SymbolicExprPtr lu = make_shared<ParameterExpr>(lu_p);
-    SymbolicExprPtr uu = make_shared<ParameterExpr>(uu_p);
-    SymbolicExprPtr A = make_shared<ParameterExpr>(A_p);
-    SymbolicExprPtr b = make_shared<ParameterExpr>(b_p);
+    SymbolicExprPtr x0 = make_shared<DecisionVariableExpr>("x0", 3);
+    SymbolicExprPtr x1 = make_shared<DecisionVariableExpr>("x1", 3);
+    SymbolicExprPtr u0 = make_shared<DecisionVariableExpr>("u0", 3);
+    SymbolicExprPtr u1 = make_shared<DecisionVariableExpr>("u1", 3);
+    SymbolicExprPtr A0 = make_shared<ParameterExpr>("A0", 4.*MatrixXd::Identity(3,3));
+    SymbolicExprPtr xr = make_shared<ParameterExpr>("xr", VectorXd::Constant(3, 2.0).matrix());
+    SymbolicExprPtr ur = make_shared<ParameterExpr>("ur", VectorXd::Constant(3, 5.0).matrix());
+    SymbolicExprPtr lu = make_shared<ParameterExpr>("lu", VectorXd::Constant(3,1.0).matrix());
+    SymbolicExprPtr uu = make_shared<ParameterExpr>("uu", VectorXd::Constant(3,17.0).matrix());
+    SymbolicExprPtr A = make_shared<ParameterExpr>("A", 1.5*MatrixXd::Identity(3,3));
+    SymbolicExprPtr b = make_shared<ParameterExpr>("b", VectorXd::Constant(3, 3.5).matrix());
 
     MatrixXd Q = MatrixXd::Identity(3,3);
-    auto xr0 = quadForm(x0 - xr, Q);
+    auto xr0 = quadForm(A0*x0, Q);
     auto xr1 = quadForm(x1 - xr, Q);
 
     MatrixXd W = 3.0*MatrixXd::Identity(3,3);
@@ -51,21 +38,37 @@ int main()
     auto object = sumup(sum);
 
     vector<Constraint> constraints;
-    constraints.push_back(u0 >= lu);
-    constraints.push_back(u0 <= uu);
-    constraints.push_back(u1 >= lu);
-    constraints.push_back(u1 <= uu);
+    constraints.push_back(constraintRange(u0, lu, uu));
+    // constraints.push_back(u0 >= lu);
+    // constraints.push_back(u0 <= uu);
+    constraints.push_back(constraintRange(u1, lu, uu));
+    // constraints.push_back(u1 >= lu);
+    // constraints.push_back(u1 <= uu);
     constraints.push_back(A*x0 == b);
     constraints.push_back(A*x1 == b);
 
     Problem problem(object, constraints, Problem::MINIMIZE);
 
-    cout<<"Q = "<<endl<<problem.Q()<<endl;
-    cout<<"p = "<<endl<<problem.p()<<endl;
+    cout<<"P = "<<endl<<problem.P()<<endl;
+    cout<<"q = "<<endl<<problem.q()<<endl;
     cout<<"A = "<<endl<<problem.A()<<endl;
     cout<<"l = "<<endl<<problem.l()<<endl;
     cout<<"u = "<<endl<<problem.u()<<endl;
 
+    xr->updateValue(VectorXd::Constant(3, 9.).matrix());
+    ur->updateValue(VectorXd::Constant(3,10.).matrix());
+    lu->updateValue(VectorXd::Constant(3, 13.).matrix());
+    uu->updateValue(VectorXd::Constant(3,21.).matrix());
+    A->updateValue(6.6*MatrixXd::Identity(3,3));
+    b->updateValue(VectorXd::Constant(3, 7.7).matrix());
+    problem.updateObjectFunction(object);
+    problem.updateConstraints(constraints);
+    cout<<"================================================"<<endl;
+    cout<<"P = "<<endl<<problem.P()<<endl;
+    cout<<"q = "<<endl<<problem.q()<<endl;
+    cout<<"A = "<<endl<<problem.A()<<endl;
+    cout<<"l = "<<endl<<problem.l()<<endl;
+    cout<<"u = "<<endl<<problem.u()<<endl;
 
     return 0;
 }

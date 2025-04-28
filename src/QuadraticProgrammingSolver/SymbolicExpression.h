@@ -5,13 +5,21 @@
 #include <memory>
 #include <unordered_map>
 
-//in QP formular, desision variables are the unknown variables that needs to be optimized
-//eg. x1,x2,x3...xn  
-//    u0,u1,u2...un
-class DecisionVariable{
+//Symbolic Expression Base Class
+class SymbolicExpression{
     public:
-        DecisionVariable(std::string name, int dim):name_(std::move(name)), dim_(dim){}
-        const std::string& name() const {return name_;}
+        virtual void updateValue(Eigen::MatrixXd) {};
+        virtual ~SymbolicExpression() = default;
+};
+
+using SymbolicExprPtr = std::shared_ptr<SymbolicExpression>;
+
+
+//Decision Variable expression
+class DecisionVariableExpr: public SymbolicExpression{
+    public:
+        DecisionVariableExpr(std::string name, int dim):name_(std::move(name)), dim_(dim){}
+        std::string name() const {return name_;}
         int dim() const {return dim_;}
 
     private:
@@ -19,57 +27,18 @@ class DecisionVariable{
         int dim_;
 };
 
-using VariablePtr = std::shared_ptr<DecisionVariable>;
-
-
-//Parameters
-class Parameter{
+//Parameter expression
+class ParameterExpr: public SymbolicExpression{
     public:
-        Parameter(std::string name, Eigen::MatrixXd value):name_(std::move(name)), value_(value){}
-        const std::string name() const {return name_;}
-        const Eigen::MatrixXd value() const {return value_;}
+        ParameterExpr(std::string name, Eigen::MatrixXd value):name_(std::move(name)), value_(std::move(value)){}
+        std::string name() const {return name_;}
+        const Eigen::MatrixXd& value() const {return value_;}
+
+        void updateValue(Eigen::MatrixXd value) { value_ = value;}
 
     private:
         std::string name_;
         Eigen::MatrixXd value_;
-};
-
-using ParameterPtr = std::shared_ptr<Parameter>;
-
-//Symbolic Expression Base Class
-class SymbolicExpression{
-    public:
-        virtual ~SymbolicExpression() = default;
-};
-
-using SymbolicExprPtr = std::shared_ptr<SymbolicExpression>;
-
-//Constant
-class ConstantExpr: public SymbolicExpression{
-    public:
-        explicit ConstantExpr(Eigen::MatrixXd& value):value_(value) {}
-        const Eigen::MatrixXd& value() const {return value_;}
-
-    private:
-        Eigen::MatrixXd value_;
-};
-
-//Decision Variable expression
-class DecisionVariableExpr: public SymbolicExpression{
-    public:
-        DecisionVariableExpr(VariablePtr var):var_(std::move(var)){}
-        VariablePtr variable() const {return var_;}
-    private:
-        VariablePtr var_;
-};
-
-//Parameter expression
-class ParameterExpr: public SymbolicExpression{
-    public:
-        ParameterExpr(ParameterPtr param):param_(std::move(param)){}
-        ParameterPtr parameter() const {return param_;}
-    private:
-        ParameterPtr param_;
 };
 
 //Binary expression, +,-
@@ -81,6 +50,7 @@ class BinaryExpr: public SymbolicExpression{
         SymbolicExprPtr lhs() const {return a_;}
         SymbolicExprPtr rhs() const {return b_;}
         TYPE operation() const {return op_;}
+
     private:
         SymbolicExprPtr a_;
         SymbolicExprPtr b_;
@@ -119,15 +89,16 @@ class DotExpr: public SymbolicExpression{
         DotExpr(SymbolicExprPtr a, SymbolicExprPtr b): a_(a), b_(b){}
         SymbolicExprPtr lhs() const {return a_;}
         SymbolicExprPtr rhs() const {return b_;}
+
     private:
         SymbolicExprPtr a_;
         SymbolicExprPtr b_;
 };
 
-inline SymbolicExprPtr dot(SymbolicExprPtr a, SymbolicExprPtr b)
-{
-    return std::make_shared<DotExpr>(a, b);
-}
+// inline SymbolicExprPtr dot(SymbolicExprPtr a, SymbolicExprPtr b)
+// {
+//     return std::make_shared<DotExpr>(a, b);
+// }
 
 inline SymbolicExprPtr operator*(SymbolicExprPtr a, SymbolicExprPtr b)
 {
@@ -135,34 +106,21 @@ inline SymbolicExprPtr operator*(SymbolicExprPtr a, SymbolicExprPtr b)
 }
 
 //Quadratic form
-// x'*Q*x
+// x'*W*x
 class QuadExpr: public SymbolicExpression{
     public:
-        QuadExpr(SymbolicExprPtr x, Eigen::MatrixXd& Q): x_(x), Q_(Q){}
+        QuadExpr(SymbolicExprPtr x, Eigen::MatrixXd& W): x_(x), W_(W){}
         SymbolicExprPtr x() const {return x_;}
-        const Eigen::MatrixXd& Q() const {return Q_;}
+        const Eigen::MatrixXd& W() const {return W_;}
 
     private:
         SymbolicExprPtr x_;
-        Eigen::MatrixXd Q_;
+        Eigen::MatrixXd W_;
 };
 
 inline SymbolicExprPtr quadForm(SymbolicExprPtr x, Eigen::MatrixXd& Q)
 {
-    if(auto var = std::dynamic_pointer_cast<DecisionVariableExpr>(x))
-    {
-        //x = xi
-        //convert to binary form xi-0
-        ParameterPtr zero = std::make_shared<Parameter>("0", Eigen::VectorXd::Zero(var->variable()->dim()));
-        SymbolicExprPtr ZERO = std::make_shared<ParameterExpr>(zero);
-        return std::make_shared<QuadExpr>(var - ZERO, Q); 
-    }
-    else
-    {
-        // binary form
-        //x = xi - xr
-        return std::make_shared<QuadExpr>(x, Q); 
-    }
+    return std::make_shared<QuadExpr>(x, Q); 
 }
 
 ///////////////////////// End of Expression Definition //////////////////////////////
@@ -170,14 +128,17 @@ inline SymbolicExprPtr quadForm(SymbolicExprPtr x, Eigen::MatrixXd& Q)
 //Constraint
 class Constraint{
     public:
-        enum TYPE{EQUAL, GEQ, LEQ};
+        enum TYPE{EQUAL, GEQ, LEQ, RANGE};
         Constraint(SymbolicExprPtr lhs, SymbolicExprPtr rhs, TYPE op): lhs_(lhs), rhs_(rhs), op_(op){}
+        Constraint(SymbolicExprPtr middleExpr, SymbolicExprPtr lhs, SymbolicExprPtr rhs, TYPE op):middleExpr_(middleExpr), lhs_(lhs), rhs_(rhs), op_(op){}
         SymbolicExprPtr lhs() const {return lhs_;}
         SymbolicExprPtr rhs() const {return rhs_;}
+        SymbolicExprPtr middle() const {return middleExpr_;}
         TYPE operation() const {return op_;}
     private:
         SymbolicExprPtr lhs_;
         SymbolicExprPtr rhs_;
+        SymbolicExprPtr middleExpr_;
         TYPE op_;
 };
 
@@ -195,6 +156,12 @@ inline Constraint operator<=(SymbolicExprPtr lhs, SymbolicExprPtr rhs)
 {
     return Constraint(lhs, rhs, Constraint::LEQ);
 }
+
+inline Constraint constraintRange(SymbolicExprPtr expr, SymbolicExprPtr lhs, SymbolicExprPtr rhs)
+{
+    return Constraint(expr, lhs, rhs, Constraint::RANGE);
+}
+
 
 //Linearized expression Ax+b
 //define a expression Ax >= l, then lhs = Ax + 0, where coeffs = A, bias = 0
@@ -221,18 +188,17 @@ class Problem{
                 collectVariables(c.lhs());
                 collectVariables(c.rhs());
             }
-            assignVaribalesIndeces();
 
             //build Q,p, A, l, u
-            buildMatrixQ();
-            buildVectorP();
+            buildMatrixP();
+            buildVectorQ();
             buildMatrixA();
             buildVectorL();
             buildVectorU();
         }
 
-        const Eigen::MatrixXd& Q() const {return Q_;}
-        const Eigen::VectorXd& p() const {return p_;}
+        const Eigen::MatrixXd& P() const {return P_;}
+        const Eigen::VectorXd& q() const {return q_;}
         const Eigen::MatrixXd& A() const {return A_;}
         const Eigen::VectorXd& l() const {return l_;}
         const Eigen::VectorXd& u() const {return u_;}
@@ -240,7 +206,7 @@ class Problem{
         void updateObjectFunction(SymbolicExprPtr);
         void updateConstraints(std::vector<Constraint>&);
 
-        const std::vector<VariablePtr>& variables() const {return variables_;}
+        const std::vector<std::string>& variables() const {return variables_;}
 
         int totalVariablesDim() const {return variablesDim_;}
 
@@ -250,27 +216,26 @@ class Problem{
         SymbolicExprPtr object_;
         std::vector<Constraint> constraints_;
         OptimizationType type_;
-        std::vector<VariablePtr> variables_;
-        int variablesDim_;
+        std::vector<std::string> variables_;
+        int variablesDim_ = 0;
         std::unordered_map<std::string, int> variableOffsets_;
 
         //QP matrics for Q, p, A, l, u
         // x'Qx + p'x
         // l <= Ax <= u
-        Eigen::MatrixXd Q_;
-        Eigen::VectorXd p_;
+        Eigen::MatrixXd P_;
+        Eigen::VectorXd q_;
         Eigen::MatrixXd A_;
         Eigen::VectorXd l_;        
         Eigen::VectorXd u_;
 
-        void buildMatrixQ(void);
+        void buildMatrixP(void);
         void buildMatrixA(void);
-        void buildVectorP(void);
+        void buildVectorQ(void);
         void buildVectorL(void);
         void buildVectorU(void);
 
         void collectVariables(SymbolicExprPtr);
-        void assignVaribalesIndeces(void);
 
         LinearizedExpr decodeLinearExpr(const SymbolicExprPtr&);
 };

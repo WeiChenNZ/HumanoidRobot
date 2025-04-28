@@ -6,12 +6,17 @@ using namespace Eigen;
 
 void Problem::collectVariables(SymbolicExprPtr expr)
 {
+    static int offset = 0;
+
     if(auto var = dynamic_pointer_cast<DecisionVariableExpr>(expr))
     {
         //if var is not in the variables
-        if(find(variables_.begin(), variables_.end(), var->variable()) == variables_.end())
+        if(find(variables_.begin(), variables_.end(), var->name()) == variables_.end())
         {
-            variables_.push_back(var->variable());
+            variables_.push_back(var->name());
+            variableOffsets_[var->name()] = offset;
+            offset += var->dim();
+            variablesDim_ += var->dim();
         }
     }
     else if(auto binary = dynamic_pointer_cast<BinaryExpr>(expr))
@@ -37,37 +42,27 @@ void Problem::collectVariables(SymbolicExprPtr expr)
     }
 }
 
-void Problem::assignVaribalesIndeces()
-{
-    int offset = 0;
-    for(const auto& v: variables_)
-    {
-        variableOffsets_[v->name()] = offset;
-        offset += v->dim();
-    }
 
-    variablesDim_ = offset;
-}
-
-void Problem::buildMatrixQ()
+void Problem::buildMatrixP()
 {
     int n = totalVariablesDim();
-    Q_ = Eigen::MatrixXd::Zero(n,n);
+    P_ = Eigen::MatrixXd::Zero(n,n);
 
     auto quadBuildQ = [&](const QuadExpr* qf)
     {
         if(auto v = dynamic_pointer_cast<DecisionVariableExpr>(qf->x()))
         {
-            int offset = variableOffset(v->variable()->name());
-            Q_.block(offset, offset, qf->Q().rows(), qf->Q().cols()) += qf->Q();
+            //x'Wx
+            int offset = variableOffset(v->name());
+            P_.block(offset, offset, qf->W().rows(), qf->W().cols()) += qf->W();
         }
         else if(auto bin = dynamic_pointer_cast<BinaryExpr>(qf->x()))
         {
             if(auto v1 = dynamic_pointer_cast<DecisionVariableExpr>(bin->lhs()))
             {
                 // (x-xr)'Q(x-xr)
-                int offset = variableOffset(v1->variable()->name());
-                Q_.block(offset, offset, qf->Q().rows(), qf->Q().cols()) += qf->Q();
+                int offset = variableOffset(v1->name());
+                P_.block(offset, offset, qf->W().rows(), qf->W().cols()) += qf->W();
             }
             else if(auto dot = dynamic_pointer_cast<DotExpr>(bin->lhs()))
             {
@@ -75,9 +70,20 @@ void Problem::buildMatrixQ()
                 if(auto var = dynamic_pointer_cast<DecisionVariableExpr>(dot->rhs()))
                 {
                     auto param = dynamic_pointer_cast<ParameterExpr>(dot->lhs());
-                    int offset = variableOffset(var->variable()->name());
-                    Q_.block(offset, offset, qf->Q().rows(), qf->Q().cols()) += param->parameter()->value().transpose() * qf->Q() * param->parameter()->value();
+                    int offset = variableOffset(var->name());
+                    P_.block(offset, offset, qf->W().rows(), qf->W().cols()) += param->value().transpose() * qf->W() * param->value();
                 }
+            }
+        }
+        else if(auto dot = dynamic_pointer_cast<DotExpr>(qf->x()))
+        {
+            //(Ax)'W(Ax)
+            auto var = dynamic_pointer_cast<DecisionVariableExpr>(dot->rhs());
+            auto param = dynamic_pointer_cast<ParameterExpr>(dot->lhs());
+            if(var && param)
+            {
+                int offset = variableOffset(var->name());
+                P_.block(offset, offset, qf->W().rows(), qf->W().rows()) += param->value().transpose() * qf->W() * param->value();
             }
         }
     };
@@ -105,10 +111,10 @@ void Problem::buildMatrixQ()
     searchExpr(object_);
 }
 
-void Problem::buildVectorP()
+void Problem::buildVectorQ()
 {
     int n = totalVariablesDim();
-    p_ = Eigen::VectorXd::Zero(n);
+    q_ = Eigen::VectorXd::Zero(n);
 
     auto quadBuildP = [&](const QuadExpr* qf)
     {
@@ -119,11 +125,11 @@ void Problem::buildVectorP()
                 // (x-xr)'Q(x-xr)
                 if(auto xr = dynamic_pointer_cast<ParameterExpr>(bin->rhs()))
                 {
-                    int offset = variableOffset(xi->variable()->name());
+                    int offset = variableOffset(xi->name());
                     if(bin->operation() == BinaryExpr::SUB)
-                        p_.segment(offset, xi->variable()->dim()) -= 2.0 * qf->Q() * xr->parameter()->value();
+                        q_.segment(offset, xi->dim()) -= 2.0 * qf->W() * xr->value();
                     else
-                        p_.segment(offset, xi->variable()->dim()) += 2.0 * qf->Q() * xr->parameter()->value();
+                        q_.segment(offset, xi->dim()) += 2.0 * qf->W() * xr->value();
                 }
                 
             }
@@ -134,11 +140,11 @@ void Problem::buildVectorP()
                 {
                     auto param = dynamic_pointer_cast<ParameterExpr>(dot->lhs());
                     auto xr = dynamic_pointer_cast<ParameterExpr>(bin->rhs());
-                    int offset = variableOffset(var->variable()->name());
+                    int offset = variableOffset(var->name());
                     if(bin->operation() == BinaryExpr::SUB)
-                        p_.segment(offset, var->variable()->dim()) -= 2.0* param->parameter()->value().transpose() * qf->Q() * xr->parameter()->value();
+                        q_.segment(offset, var->dim()) -= 2.0* param->value().transpose() * qf->W() * xr->value();
                     else
-                        p_.segment(offset, var->variable()->dim()) += 2.0* param->parameter()->value().transpose() * qf->Q() * xr->parameter()->value();
+                        q_.segment(offset, var->dim()) += 2.0* param->value().transpose() * qf->W() * xr->value();
                 }
             }
         }
@@ -182,12 +188,21 @@ void Problem::buildMatrixA()
     int row = 0;
     for(const auto& c: constraints_)
     {
-        auto lhs = decodeLinearExpr(c.lhs());
-        int rows = lhs.bias.rows();
-        A_.block(row, 0, rows, n) = lhs.coeffs;
-        row += rows;
+        if(c.operation() != Constraint::RANGE)
+        {
+            auto lhs = decodeLinearExpr(c.lhs());
+            int rows = lhs.bias.rows();
+            A_.block(row, 0, rows, n) = lhs.coeffs;
+            row += rows;
+        }
+        else
+        {
+            auto middle = decodeLinearExpr(c.middle());
+            int rows = middle.bias.rows();
+            A_.block(row, 0, rows, n) = middle.coeffs;
+            row += rows;
+        }   
     }
-
 }
 
 void Problem::buildVectorL()
@@ -218,7 +233,10 @@ void Problem::buildVectorL()
                 break;
             case Constraint::LEQ:
                 l_.segment(row, rows) = VectorXd::Constant(rows, -numeric_limits<double>::infinity());
-                break;    
+                break;  
+            case Constraint::RANGE:
+                l_.segment(row, rows) = lhs.bias;
+                break;  
         }
         row += rows;
     }
@@ -253,7 +271,10 @@ void Problem::buildVectorU()
                 break;
             case Constraint::LEQ:
                 u_.segment(row, rows) = rhs.bias;
-                break;    
+                break;   
+            case Constraint::RANGE:
+                u_.segment(row, rows) = rhs.bias;
+                break;   
         }
         row += rows;
     }
@@ -267,8 +288,8 @@ LinearizedExpr Problem::decodeLinearExpr(const SymbolicExprPtr& expr)
     if(auto var = dynamic_pointer_cast<DecisionVariableExpr>(expr))
     {
         //case 1: f = x
-        int offset = variableOffset(var->variable()->name());
-        int dim = var->variable()->dim();
+        int offset = variableOffset(var->name());
+        int dim = var->dim();
         MatrixXd coeffs = MatrixXd::Zero(dim, totalVariablesDim());
         coeffs.block(0,offset,dim,dim) = MatrixXd::Identity(dim,dim);
         return{coeffs, VectorXd::Zero(dim)};
@@ -298,9 +319,9 @@ LinearizedExpr Problem::decodeLinearExpr(const SymbolicExprPtr& expr)
 
         if(mat && var)
         {
-            MatrixXd A = mat->parameter()->value();
-            int offset = variableOffset(var->variable()->name());
-            int dim = var->variable()->dim();
+            MatrixXd A = mat->value();
+            int offset = variableOffset(var->name());
+            int dim = var->dim();
 
             MatrixXd coeffs = MatrixXd::Zero(A.rows(), totalVariablesDim());
             coeffs.block(0,offset, A.rows(), dim) = A;
@@ -311,8 +332,8 @@ LinearizedExpr Problem::decodeLinearExpr(const SymbolicExprPtr& expr)
     else if(auto param = dynamic_pointer_cast<ParameterExpr>(expr))
     {
         // b / l/ u
-        VectorXd bias = VectorXd::Zero(param->parameter()->value().rows());
-        bias = param->parameter()->value().col(0);//param is a MatrixXd(n,1), so get the 0's column
+        VectorXd bias = VectorXd::Zero(param->value().rows());
+        bias = param->value().col(0);//param is a MatrixXd(n,1), so get the 0's column
         return {MatrixXd::Zero(bias.rows(), totalVariablesDim()), bias};
     }
 
@@ -326,8 +347,8 @@ void Problem::updateObjectFunction(SymbolicExprPtr object)
     object_ = object;
     //assume that the decision variables are not changed
     //so only need to update Q,P matrices instead of update indeces and sizes
-    buildMatrixQ();
-    buildVectorP();
+    buildMatrixP();
+    buildVectorQ();
 }
 
 //update constraits at the runtime
