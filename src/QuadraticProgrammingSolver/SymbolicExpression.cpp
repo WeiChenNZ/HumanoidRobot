@@ -1,4 +1,7 @@
 #include "SymbolicExpression.h"
+#include <stdlib.h>
+#include "OsqpEigen/OsqpEigen.h"
+
 
 
 using namespace std;
@@ -6,7 +9,7 @@ using namespace Eigen;
 
 void Problem::collectVariables(SymbolicExprPtr expr)
 {
-    static int offset = 0;
+    // static int offset = 0;
 
     if(auto var = dynamic_pointer_cast<DecisionVariableExpr>(expr))
     {
@@ -14,9 +17,10 @@ void Problem::collectVariables(SymbolicExprPtr expr)
         if(find(variables_.begin(), variables_.end(), var->name()) == variables_.end())
         {
             variables_.push_back(var->name());
-            variableOffsets_[var->name()] = offset;
-            offset += var->dim();
-            variablesDim_ += var->dim();
+            variablesWithDim_[var->name()] = var->dim();
+            // variableOffsets_[var->name()] = offset;
+            // offset += var->dim();
+            // variablesDim_ += var->dim();
         }
     }
     else if(auto binary = dynamic_pointer_cast<BinaryExpr>(expr))
@@ -42,38 +46,48 @@ void Problem::collectVariables(SymbolicExprPtr expr)
     }
 }
 
+void Problem::sortVariables(vector<string>& v)
+{
+    auto extractNumber = [](string& s)
+    {
+        string num;
+        for(char c: s)
+        {
+            if(isdigit(c)) num += c;
+        }
+        return stoi(num);
+    };
+    sort(v.begin(), v.end(), [&](string& a, string& b){if(a[0] != b[0]) return a[0] > b[0]; return extractNumber(a) < extractNumber(b);});
+}
+
+void Problem::setVariablesIndeces(void)
+{
+    //sort all variables so that they could be arranged like
+    //x0,x1,x2...xn, u0,u1,u2...un
+    sortVariables(variables_);
+
+    int offset = 0;
+    for(auto s: variables_)
+    {
+        variableOffsets_[s] = offset;
+        offset += variablesWithDim_[s];
+    }
+    variablesDim_ = offset;
+}
+
 
 void Problem::buildMatrixP()
 {
     int n = totalVariablesDim();
     P_ = Eigen::MatrixXd::Zero(n,n);
 
-    auto quadBuildQ = [&](const QuadExpr* qf)
+    auto quadBuildP = [&](const QuadExpr* qf)
     {
         if(auto v = dynamic_pointer_cast<DecisionVariableExpr>(qf->x()))
         {
             //x'Wx
             int offset = variableOffset(v->name());
             P_.block(offset, offset, qf->W().rows(), qf->W().cols()) += qf->W();
-        }
-        else if(auto bin = dynamic_pointer_cast<BinaryExpr>(qf->x()))
-        {
-            if(auto v1 = dynamic_pointer_cast<DecisionVariableExpr>(bin->lhs()))
-            {
-                // (x-xr)'Q(x-xr)
-                int offset = variableOffset(v1->name());
-                P_.block(offset, offset, qf->W().rows(), qf->W().cols()) += qf->W();
-            }
-            else if(auto dot = dynamic_pointer_cast<DotExpr>(bin->lhs()))
-            {
-                // (Ax-xr)'Q(Ax-xr)
-                if(auto var = dynamic_pointer_cast<DecisionVariableExpr>(dot->rhs()))
-                {
-                    auto param = dynamic_pointer_cast<ParameterExpr>(dot->lhs());
-                    int offset = variableOffset(var->name());
-                    P_.block(offset, offset, qf->W().rows(), qf->W().cols()) += param->value().transpose() * qf->W() * param->value();
-                }
-            }
         }
         else if(auto dot = dynamic_pointer_cast<DotExpr>(qf->x()))
         {
@@ -86,13 +100,72 @@ void Problem::buildMatrixP()
                 P_.block(offset, offset, qf->W().rows(), qf->W().rows()) += param->value().transpose() * qf->W() * param->value();
             }
         }
+        else if(auto bin = dynamic_pointer_cast<BinaryExpr>(qf->x()))
+        {
+            //case 1
+            //(xi - xr)
+            if(auto v1 = dynamic_pointer_cast<DecisionVariableExpr>(bin->lhs()))
+            {
+                // (x-xr)'Q(x-xr)
+                int offset = variableOffset(v1->name());
+                P_.block(offset, offset, qf->W().rows(), qf->W().cols()) += qf->W();
+            }
+            //case 2
+            //(Axi - xr)
+            else if(auto dot = dynamic_pointer_cast<DotExpr>(bin->lhs()))
+            {
+                // (Ax-xr)'Q(Ax-xr)
+                if(auto var = dynamic_pointer_cast<DecisionVariableExpr>(dot->rhs()))
+                {
+                    auto param = dynamic_pointer_cast<ParameterExpr>(dot->lhs());
+                    int offset = variableOffset(var->name());
+                    P_.block(offset, offset, qf->W().rows(), qf->W().cols()) += param->value().transpose() * qf->W() * param->value();
+                }
+            }
+            else if(auto subBin = dynamic_pointer_cast<BinaryExpr>(bin->lhs()))
+            {
+                //case 3
+                //(xi - xj - xr)
+                if(auto vi = dynamic_pointer_cast<DecisionVariableExpr>(subBin->lhs()))
+                {
+                    if(auto vj = dynamic_pointer_cast<DecisionVariableExpr>(subBin->rhs()))
+                    {
+                        int offset1 = variableOffset(vi->name());
+                        int offset2 = variableOffset(vj->name());
+                        P_.block(offset1, offset1, qf->W().rows(), qf->W().cols()) += qf->W();
+                        P_.block(offset2, offset2, qf->W().rows(), qf->W().cols()) += qf->W();
+                        P_.block(offset1, offset2, qf->W().rows(), qf->W().cols()) += qf->W();
+                        P_.block(offset2, offset1, qf->W().rows(), qf->W().cols()) += qf->W();
+                    }
+                }
+                //case 4
+                //(Axi - Axj - xr)
+                else if(auto dotl = dynamic_pointer_cast<DotExpr>(subBin->lhs()))
+                {
+                    if(auto dotr = dynamic_pointer_cast<DotExpr>(subBin->rhs()))
+                    {
+                        auto vi = dynamic_pointer_cast<DecisionVariableExpr>(dotl->rhs());
+                        auto vj = dynamic_pointer_cast<DecisionVariableExpr>(dotr->rhs());
+                        auto parami = dynamic_pointer_cast<ParameterExpr>(dotl->lhs());
+                        auto paramj = dynamic_pointer_cast<ParameterExpr>(dotr->lhs());
+                        int offset1 = variableOffset(vi->name());
+                        int offset2 = variableOffset(vj->name());
+                        //need to be tested
+                        P_.block(offset1, offset1, qf->W().rows(), qf->W().cols()) += parami->value().transpose() * qf->W() * parami->value();
+                        P_.block(offset2, offset2, qf->W().rows(), qf->W().cols()) += paramj->value().transpose() * qf->W() * paramj->value();
+                        P_.block(offset1, offset2, qf->W().rows(), qf->W().cols()) += parami->value().transpose() * qf->W() * paramj->value();
+                        P_.block(offset2, offset1, qf->W().rows(), qf->W().cols()) += paramj->value().transpose() * qf->W() * parami->value();
+                    }
+                }
+            }       
+        }
     };
 
     function<void(const SymbolicExprPtr&)> searchExpr = [&](const SymbolicExprPtr& expr)
     {
         if(auto e = dynamic_pointer_cast<QuadExpr>(expr))
         {
-            quadBuildQ(e.get());
+            quadBuildP(e.get());
         }
         else if(auto sumup = dynamic_pointer_cast<SumUpExpr>(expr))
         {
@@ -145,6 +218,52 @@ void Problem::buildVectorQ()
                         q_.segment(offset, var->dim()) -= 2.0* param->value().transpose() * qf->W() * xr->value();
                     else
                         q_.segment(offset, var->dim()) += 2.0* param->value().transpose() * qf->W() * xr->value();
+                }
+            }
+            else if(auto subBin = dynamic_pointer_cast<BinaryExpr>(bin->lhs()))
+            {
+                //(xi - xj - xr)
+                if(auto xi = dynamic_pointer_cast<DecisionVariableExpr>(subBin->lhs()))
+                {
+                    if(auto xj = dynamic_pointer_cast<DecisionVariableExpr>(subBin->rhs()))
+                    {
+                        auto xr = dynamic_pointer_cast<ParameterExpr>(bin->rhs());
+                        int offset1 = variableOffset(xi->name());
+                        int offset2 = variableOffset(xj->name());
+                        if(bin->operation() == BinaryExpr::SUB)
+                            q_.segment(offset1, xi->dim()) -= 2.0 * qf->W() * xr->value();
+                        else
+                            q_.segment(offset1, xi->dim()) += 2.0 * qf->W() * xr->value();
+
+                        if(bin->operation() == subBin->operation())
+                            q_.segment(offset2, xj->dim()) += 2.0 * qf->W() * xr->value();
+                        else
+                            q_.segment(offset2, xj->dim()) += 2.0 * qf->W() * xr->value();
+                    }
+                }
+                //(Axi - Bxj - xr)
+                else if(auto dotl = dynamic_pointer_cast<DotExpr>(subBin->lhs()))
+                {
+                    if(auto dotr = dynamic_pointer_cast<DotExpr>(subBin->rhs()))
+                    {
+                        auto xi = dynamic_pointer_cast<DecisionVariableExpr>(dotl->rhs());
+                        auto xj = dynamic_pointer_cast<DecisionVariableExpr>(dotr->rhs());
+                        auto A = dynamic_pointer_cast<ParameterExpr>(dotl->lhs());
+                        auto B = dynamic_pointer_cast<ParameterExpr>(dotr->lhs());
+                        auto xr = dynamic_pointer_cast<ParameterExpr>(bin->rhs());
+                        int offset1 = variableOffset(xi->name());
+                        int offset2 = variableOffset(xj->name());
+
+                        if(bin->operation() == BinaryExpr::SUB)
+                            q_.segment(offset1, xi->dim()) -= 2.0 * A->value().transpose() * qf->W() * xr->value();
+                        else
+                            q_.segment(offset1, xi->dim()) += 2.0 * A->value().transpose() * qf->W() * xr->value();
+                        
+                        if(bin->operation() == subBin->operation())
+                            q_.segment(offset2, xj->dim()) += 2.0 * B->value().transpose() * qf->W() * xr->value();
+                        else
+                            q_.segment(offset2, xj->dim()) += 2.0 * B->value().transpose() * qf->W() * xr->value();
+                    }
                 }
             }
         }
@@ -352,7 +471,7 @@ void Problem::updateObjectFunction(SymbolicExprPtr object)
 }
 
 //update constraits at the runtime
-void Problem::updateConstraints(std::vector<Constraint>& constraints)
+void Problem::updateConstraints(vector<Constraint>& constraints)
 {
     constraints_ = constraints;
     //assume that the decision variables are not changed
@@ -362,3 +481,37 @@ void Problem::updateConstraints(std::vector<Constraint>& constraints)
     buildVectorU();
 }
 
+
+bool Problem::solve()
+{
+    int n = P_.rows();
+    int m = A_.rows();
+
+    OsqpEigen::Solver solver;
+
+    solver.settings()->setVerbosity(false);
+    solver.settings()->setWarmStart(true);
+
+    solver.data()->setNumberOfVariables(n);
+    solver.data()->setNumberOfConstraints(m);
+
+    SparseMatrix<double> Psparse = P_.sparseView();
+    SparseMatrix<double> Asparse = A_.sparseView();
+
+    solver.data()->setHessianMatrix(Psparse);
+    solver.data()->setGradient(q_);
+    solver.data()->setLinearConstraintsMatrix(Asparse);
+    solver.data()->setLowerBound(l_);
+    solver.data()->setUpperBound(u_);
+
+    solver.initSolver();
+
+    if(solver.solveProblem() != OsqpEigen::ErrorExitFlag::NoError) return false;
+
+    solution_ = solver.getSolution();
+
+    return true;
+}
+
+
+            

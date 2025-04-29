@@ -48,6 +48,9 @@ include_directories(${EIGEN3_INCLUDE_DIRS})
 find_package(urdfdom REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
+# find_package(osqp REQUIRED)
+find_package(OsqpEigen REQUIRED)
+ 
 add_subdirectory(src/Shared_Memory)
 add_subdirectory(src/Simulation)
 add_subdirectory(src/RobotModel)
@@ -58,6 +61,7 @@ add_subdirectory(src/WBC)
 add_subdirectory(src/StateEstimation)
 add_subdirectory(src/MemoryManager)
 add_subdirectory(src/BruceRobotStatus)
+add_subdirectory(src/QuadraticProgrammingSolver)
 
 # Create executable
 #add_executable(main ${SOURCES})

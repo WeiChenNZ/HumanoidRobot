@@ -5,6 +5,7 @@
 #include <memory>
 #include <unordered_map>
 
+
 //Symbolic Expression Base Class
 class SymbolicExpression{
     public:
@@ -189,6 +190,8 @@ class Problem{
                 collectVariables(c.rhs());
             }
 
+            setVariablesIndeces();
+
             //build Q,p, A, l, u
             buildMatrixP();
             buildVectorQ();
@@ -212,11 +215,16 @@ class Problem{
 
         int variableOffset(const std::string& name) const {return variableOffsets_.at(name);}
 
+        bool solve(void);
+
+        const Eigen::VectorXd& getSolution(void) const { return solution_;}
+
     private:
         SymbolicExprPtr object_;
         std::vector<Constraint> constraints_;
         OptimizationType type_;
         std::vector<std::string> variables_;
+        std::unordered_map<std::string, int> variablesWithDim_;
         int variablesDim_ = 0;
         std::unordered_map<std::string, int> variableOffsets_;
 
@@ -229,6 +237,8 @@ class Problem{
         Eigen::VectorXd l_;        
         Eigen::VectorXd u_;
 
+        Eigen::VectorXd solution_;
+
         void buildMatrixP(void);
         void buildMatrixA(void);
         void buildVectorQ(void);
@@ -236,6 +246,8 @@ class Problem{
         void buildVectorU(void);
 
         void collectVariables(SymbolicExprPtr);
+        void sortVariables(std::vector<std::string>&);
+        void setVariablesIndeces(void);
 
         LinearizedExpr decodeLinearExpr(const SymbolicExprPtr&);
 };
