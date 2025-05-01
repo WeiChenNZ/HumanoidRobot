@@ -66,6 +66,10 @@ void Problem::setVariablesIndeces(void)
     //x0,x1,x2...xn, u0,u1,u2...un
     sortVariables(variables_);
 
+    for(auto c:variables_)
+        cout<<c<<" ";
+    cout<<endl;
+
     int offset = 0;
     for(auto s: variables_)
     {
@@ -134,8 +138,17 @@ void Problem::buildMatrixP()
                         int offset2 = variableOffset(vj->name());
                         P_.block(offset1, offset1, qf->W().rows(), qf->W().cols()) += qf->W();
                         P_.block(offset2, offset2, qf->W().rows(), qf->W().cols()) += qf->W();
-                        P_.block(offset1, offset2, qf->W().rows(), qf->W().cols()) += qf->W();
-                        P_.block(offset2, offset1, qf->W().rows(), qf->W().cols()) += qf->W();
+
+                        if(subBin->operation() == BinaryExpr::ADD)
+                        {
+                            P_.block(offset1, offset2, qf->W().rows(), qf->W().cols()) += qf->W();
+                            P_.block(offset2, offset1, qf->W().rows(), qf->W().cols()) += qf->W();
+                        }
+                        else
+                        {
+                            P_.block(offset1, offset2, qf->W().rows(), qf->W().cols()) -= qf->W();
+                            P_.block(offset2, offset1, qf->W().rows(), qf->W().cols()) -= qf->W();
+                        }
                     }
                 }
                 //case 4
@@ -153,8 +166,16 @@ void Problem::buildMatrixP()
                         //need to be tested
                         P_.block(offset1, offset1, qf->W().rows(), qf->W().cols()) += parami->value().transpose() * qf->W() * parami->value();
                         P_.block(offset2, offset2, qf->W().rows(), qf->W().cols()) += paramj->value().transpose() * qf->W() * paramj->value();
-                        P_.block(offset1, offset2, qf->W().rows(), qf->W().cols()) += parami->value().transpose() * qf->W() * paramj->value();
-                        P_.block(offset2, offset1, qf->W().rows(), qf->W().cols()) += paramj->value().transpose() * qf->W() * parami->value();
+                        if(subBin->operation() == BinaryExpr::ADD)
+                        {
+                            P_.block(offset1, offset2, qf->W().rows(), qf->W().cols()) += parami->value().transpose() * qf->W() * paramj->value();
+                            P_.block(offset2, offset1, qf->W().rows(), qf->W().cols()) += paramj->value().transpose() * qf->W() * parami->value();
+                        }
+                        else
+                        {
+                            P_.block(offset1, offset2, qf->W().rows(), qf->W().cols()) -= parami->value().transpose() * qf->W() * paramj->value();
+                            P_.block(offset2, offset1, qf->W().rows(), qf->W().cols()) -= paramj->value().transpose() * qf->W() * parami->value();
+                        }
                     }
                 }
             }       
@@ -182,6 +203,9 @@ void Problem::buildMatrixP()
     };
 
     searchExpr(object_);
+
+    //to match the OSQP object form: 0.5x'Px + q'x so I need to multiply P_ by 2
+    P_ *= 2.0;
 }
 
 void Problem::buildVectorQ()
@@ -497,6 +521,7 @@ bool Problem::solve()
 
     SparseMatrix<double> Psparse = P_.sparseView();
     SparseMatrix<double> Asparse = A_.sparseView();
+
 
     solver.data()->setHessianMatrix(Psparse);
     solver.data()->setGradient(q_);

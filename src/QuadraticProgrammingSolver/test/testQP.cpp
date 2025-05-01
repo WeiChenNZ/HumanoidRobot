@@ -3,7 +3,103 @@
 using namespace std;
 using namespace Eigen;
 
+
 int main()
+{
+    //object:
+    //      sumup[(xj - xi - xr)'Wx(xj - xi - xr) + (ui - ur)'Wu(ui - ur)] where j = i + 1, i = 0,1,2
+    //constraints:
+    //      xj = xi + ui, where j = i + 1
+    //      l <= ui <= u
+
+    //Symbol Expressions
+    // SymbolicExprPtr x0 = make_shared<DecisionVariableExpr>("x0", 3);
+    SymbolicExprPtr x0 = make_shared<ParameterExpr>("x0", Vector3d::Zero());
+    SymbolicExprPtr x1 = make_shared<DecisionVariableExpr>("x1", 3);
+    SymbolicExprPtr x2 = make_shared<DecisionVariableExpr>("x2", 3);
+    SymbolicExprPtr x3 = make_shared<DecisionVariableExpr>("x3", 3);
+    SymbolicExprPtr u0 = make_shared<DecisionVariableExpr>("u0", 3);
+    SymbolicExprPtr u1 = make_shared<DecisionVariableExpr>("u1", 3);
+    SymbolicExprPtr u2 = make_shared<DecisionVariableExpr>("u2", 3);
+    SymbolicExprPtr xr = make_shared<ParameterExpr>("xr", Vector3d(3, 3, 3));  //[3, 3, 3]
+    SymbolicExprPtr ur = make_shared<ParameterExpr>("ur", Vector3d(1, 1, 1));  //[1, 1, 1]
+    SymbolicExprPtr lu = make_shared<ParameterExpr>("lu", VectorXd::Constant(3, 0.1).matrix()); //[0.1, 0.1, 0.1]
+    SymbolicExprPtr uu = make_shared<ParameterExpr>("uu", VectorXd::Constant(3, 1.1).matrix()); //[1.1, 1.1, 1.1]
+
+    MatrixXd Wx = 0.2* MatrixXd::Identity(3,3);  //0.6
+    MatrixXd Wu = 0.7* MatrixXd::Identity(3,3);  //0.7
+
+    // SymbolicExprPtr errorX0 = quadForm(x1 - x0 - xr, Wx);
+    SymbolicExprPtr errorX0 = quadForm(x1 - xr, Wx);
+    SymbolicExprPtr errorX1 = quadForm(x2 - x1 - xr, Wx);
+    SymbolicExprPtr errorX2 = quadForm(x3 - x2 - xr, Wx);
+    SymbolicExprPtr errorU0 = quadForm(u0 - ur, Wu);
+    SymbolicExprPtr errorU1 = quadForm(u1 - ur, Wu);
+    SymbolicExprPtr errorU2 = quadForm(u2 - ur, Wu);
+    // SymbolicExprPtr errorX0 = quadForm(x1 - xr, Wx);
+    // SymbolicExprPtr errorX1 = quadForm(x2 - xr, Wx);
+    // SymbolicExprPtr errorX2 = quadForm(x3 - xr, Wx);
+    // SymbolicExprPtr errorU0 = quadForm(u0 - ur, Wu);
+    // SymbolicExprPtr errorU1 = quadForm(u1 - ur, Wu);
+    // SymbolicExprPtr errorU2 = quadForm(u2 - ur, Wu);
+    
+    vector<SymbolicExprPtr> sum;
+    sum.push_back(errorX0);
+    sum.push_back(errorX1);
+    sum.push_back(errorX2);
+    sum.push_back(errorU0);
+    sum.push_back(errorU1);
+    sum.push_back(errorU2);
+
+    SymbolicExprPtr object = sumup(sum);
+
+    vector<Constraint> constraints;
+    SymbolicExprPtr b = make_shared<ParameterExpr>("b", VectorXd::Constant(3, 0));
+
+    constraints.push_back(x1 - x0 - u0 == b);
+    constraints.push_back(x2 - x1 - u1 == b);
+    constraints.push_back(x3 - x2 - u2 == b);
+    constraints.push_back(constraintRange(u0, lu, uu));
+    constraints.push_back(constraintRange(u1, lu, uu));
+    constraints.push_back(constraintRange(u2, lu, uu));
+
+    Problem problem(object, constraints, Problem::MINIMIZE);
+
+    // auto printMatrixCSV = [](const Eigen::MatrixXd& mat) {
+    //     for (int i = 0; i < mat.rows(); ++i) {
+    //         for (int j = 0; j < mat.cols(); ++j) {
+    //             std::cout << mat(i, j);
+    //             if (j < mat.cols() - 1) std::cout << ", ";
+    //         }
+    //         std::cout << "\n";
+    //     }
+    // };
+
+    // printMatrixCSV(problem.P());
+    // printMatrixCSV(problem.q());
+    // printMatrixCSV(problem.A());
+    // printMatrixCSV(problem.l());
+    // printMatrixCSV(problem.u());
+
+    cout<<"P = "<<endl<<problem.P()<<endl;
+    cout<<"q = "<<endl<<problem.q()<<endl;
+    cout<<"A = "<<endl<<problem.A()<<endl;
+    cout<<"l = "<<endl<<problem.l()<<endl;
+    cout<<"u = "<<endl<<problem.u()<<endl;
+
+    VectorXd result;
+    if(problem.solve())
+        result = problem.getSolution();
+    
+    // double result1, result2;
+    // result1 = result.transpose() * problem.P() * result + 2 * problem.q().transpose() * result;
+
+    cout<<"result = "<<endl<<result<<endl;
+
+    return 0;
+}
+
+int main_back()
 {
     // // i = 0,1, dim = 3[x,y,z]
     // //sumup((xi - 2)'*Q*(xi - 2) + (ui - 5)'*W*(ui - 5))

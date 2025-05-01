@@ -62,6 +62,7 @@ add_subdirectory(src/StateEstimation)
 add_subdirectory(src/MemoryManager)
 add_subdirectory(src/BruceRobotStatus)
 add_subdirectory(src/QuadraticProgrammingSolver)
+add_subdirectory(src/PeriodicTask)
 
 # Create executable
 #add_executable(main ${SOURCES})
